@@ -1,0 +1,29 @@
+# Dependencies 
+node_modules/ 
+# Python cache 
+__pycache__/ 
+*.py[cod] 
+*$py.class 
+*.so 
+.Python 
+# Logs 
+*.log 
+logs/ 
+# Archives 
+*.zip 
+*.tar.gz 
+*.rar 
+# Environment 
+.env 
+venv/ 
+env/ 
+ENV/ 
+# IDE files 
+.vs/ 
+.vscode/ 
+*.swp 
+*.swo 
+# Compiled JS 
+static/dist/ 
+# Other 
+.DS_Store 
