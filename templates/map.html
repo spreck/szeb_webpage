@@ -1,0 +1,40 @@
+<div class="map-with-sidebar">
+  <aside class="sidebar">
+    <label for="rasterSelect">Species</label>
+    <select id="rasterSelect" class="form-select"></select>
+    <label for="attributeSelect">Attribute</label>
+    <select id="attributeSelect" class="form-select"></select>
+    <label>
+      <input type="checkbox" id="topTenOnlyCheckbox" /> Show Top 10% for Total SZEB Rank
+    </label>
+
+    <div id="legend" class="card">
+      <div class="card-header">Legend</div>
+      <div class="card-body" id="legend-content">Select an attribute</div>
+    </div>
+    <!-- ROI Tools -->
+    <div class="roi-tools">
+      <div class="file-input-wrapper">
+        <button id="customFileButton" class="btn btn-outline-dark">Choose File</button>
+        <input type="file" id="roiFileInput" accept=".zip,.geojson,.kml,.kmz,.gpkg">
+      </div>
+      <div id="fileNameDisplay" class="file-name">No file chosen</div>
+      <button id="uploadRoiButton" class="btn btn-primary">Upload ROI</button>
+      <button id="zoomToRoiButton" class="btn btn-secondary" disabled>Zoom to ROI</button>
+      <a href="#" id="clearRoiLink" style="font-size: 0.9em; display: block; margin-top: 5px;">Clear Region of Interest (ROI)</a>
+      <a href="#" id="downloadVectorBtn" style="font-size: 0.9em; display: block; margin-top: 5px;">Download Vector Data</a>
+      <a href="#" id="downloadCurrentViewBtn" style="font-size: 0.9em; display: block; margin-top: 5px;">Download Current View</a>
+    </div>
+  </aside>
+  <main class="map-container">
+    <div id="map"></div>
+  </main>
+</div>
+
+<!-- Feature Info Table -->
+<div id="table-container">
+  <div id="clickInfoTable" class="card">
+    <div class="card-header">Feature Info</div>
+    <div class="card-body" id="clickInfoBody">Click on the map to get info.</div>
+  </div>
+</div>

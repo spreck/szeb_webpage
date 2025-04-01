@@ -1,0 +1,45 @@
+{
+  "name": "cone-scouting-tool",
+  "version": "1.0.0",
+  "description": "A tool for seed scouting of conifer forests",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "build": "babel static/js -d static/dist --config-file ./babel.config.json",
+    "watch": "babel static/js -d static/dist --watch --config-file ./babel.config.json"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "moduleDirectories": [
+      "node_modules",
+      "static/js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "collectCoverageFrom": [
+      "static/js/**/*.js",
+      "!static/js/vendor/**/*.js"
+    ]
+  },
+  "dependencies": {
+    "core-js": "^3.25.0",
+    "leaflet": "^1.9.4",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.21.0",
+    "@babel/core": "^7.21.0",
+    "@babel/preset-env": "^7.26.9",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.6.2"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not op_mini all"
+  ]
+}

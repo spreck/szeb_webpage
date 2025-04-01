@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>CDFW Regions</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" crossorigin="">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js" crossorigin=""></script>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <style>
+    body, html, #map { height: 100%; margin: 0; padding: 0; }
+    #map { height: 90vh; }
+    #summaryLabel { padding: 20px; }
+  </style>
+</head>
+<body>
+  <h1 id="title">CDFW Regions</h1>
+  <div id="map"></div>
+  <div id="summaryLabel">
+      <p>Click a region on the map to get more information.</p>
+  </div>
+
+<script>
+  function init() {
+    var map = L.map('map').setView([37.7749, -122.4194], 10); // Adjust center and zoom level
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var geojsonLayerUrl = 'http://evacportal.duckdns.org/geoserver/EvacuationProjects/ows?service=WFS&version=2.0.0&request=GetFeature&typeName=EvacuationProjects:CDFW_Regions&outputFormat=application/json';
+
+    // Function to style features based on the 'REGION' attribute
+    function style(feature) {
+      return {
+        fillColor: getColor(feature.properties.REGION),
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        fillOpacity: 0.7
+      };
+    }
+
+    // Get color depending on the region number
+    function getColor(region) {
+      return region == 1 ? '#800026' :
+             region == 2 ? '#BD0026' :
+             region == 3 ? '#E31A1C' :
+             region == 4 ? '#FC4E2A' :
+             region == 5 ? '#FD8D3C' :
+             region == 6 ? '#FEB24C' :
+             region == 7 ? '#FED976' :
+                           '#FFEDA0';
+    }
+
+    function handleJson(data) {
+      L.geoJson(data, {
+        style: style,
+        onEachFeature: function (feature, layer) {
+          layer.bindPopup('Region: ' + feature.properties.REGION); // Adjust based on your GeoJSON properties
+        }
+      }).addTo(map);
+    }
+
+    $.ajax({
+      url: geojsonLayerUrl,
+      dataType: 'json',
+      success: handleJson
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<StyledLayerDescriptor version="1.0.0" xsi:schemaLocation="http://www.opengis.net/sld StyledLayerDescriptor.xsd" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <NamedLayer>
+    <Name>Gradient Square Point Style</Name>
+    <UserStyle>
+      <Name>Gradient Square Point Style</Name>
+      <Title>Gradient Square Point Style</Title>
+      <FeatureTypeStyle>
+        <Rule>
+          <Name>Value 0.0 - 0.1</Name>
+          <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.1</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#040404</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.1 - 0.2</Name>
+           <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.1</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.2</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#0303f2</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.2 - 0.3</Name>
+           <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.2</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.3</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#0053ff</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.3 - 0.4</Name>
+           <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.3</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.4</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#00a3ff</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.4 - 0.5</Name>
+           <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.4</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.5</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#08c7fc</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.5 - 0.6</Name>
+           <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.5</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.6</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#00ffcd</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.6 - 0.7</Name>
+           <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.6</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.7</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#12ff00</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.7 - 0.8</Name>
+           <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.7</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.8</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#ffe000</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.8 - 0.9</Name>
+           <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.8</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>0.9</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#ffa300</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>4</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+        <Rule>
+          <Name>Value 0.9 - 1.0</Name>
+          <Filter xmlns="http://www.opengis.net/ogc">
+            <PropertyIsBetween>
+              <PropertyName>${env.attribute}</PropertyName>
+              <LowerBoundary>
+                <Literal>0.9</Literal>
+              </LowerBoundary>
+              <UpperBoundary>
+                <Literal>1</Literal>
+              </UpperBoundary>
+            </PropertyIsBetween>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>square</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">#fd4625</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>6</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
+      </FeatureTypeStyle>
+    </UserStyle>
+  </NamedLayer>
+</StyledLayerDescriptor>

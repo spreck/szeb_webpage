@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic GeoJSON Styling</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map { height: 100vh; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    var map = L.map('map').setView([34.5828, -117.4092], 13); // Adjust based on your data's location
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Function to determine fill color based on a property value
+    function getColor(value) {
+        return value > 0.8 ? '#800026' :
+               value > 0.6 ? '#BD0026' :
+               value > 0.4 ? '#E31A1C' :
+               value > 0.2 ? '#FC4E2A' :
+                             '#FFEDA0';
+    }
+
+    // Function to style features based on properties
+    function styleFeature(feature) {
+        return {
+            fillColor: getColor(feature.properties.CIscoreP),
+            color: 'white', // Border color
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.7,
+            radius: 8 // Set the radius of the circle
+        };
+    }
+
+	var wmsBaseEPUrl = 'http://localhost/geoserver/' + '/EvacuationProjects/wms';
+    // Fetch GeoJSON from a GeoServer WFS service and add it to the map with dynamic styling
+    var geojsonLayerUrl = wmsBaseEPUrl + '/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=EvacuationProjects:Adelanto_all_data&outputFormat=application/json';
+
+    fetch(geojsonLayerUrl)
+        .then(function(response) { return response.json(); })
+        .then(function(geojsonData) {
+            L.geoJson(geojsonData, {
+                pointToLayer: function (feature, latlng) {
+                    return L.circleMarker(latlng, styleFeature(feature));
+                }
+            }).addTo(map);
+        });
+		
+		
+	fetch(geojsonLayerUrl)
+		.then(function(response) { return response.json(); })
+		.then(function(geojsonData) {
+			L.geoJson(geojsonData, {
+				pointToLayer: function (feature, latlng) {
+					var marker = L.circleMarker(latlng, styleFeature(feature));
+					
+					// Add click event to show properties in a popup
+					marker.on('click', function() {
+						var props = feature.properties;
+						var popupContent = '<b>Properties:</b><br>';
+						// Assuming you want to list all properties
+						for (var prop in props) {
+							popupContent += prop + ': ' + props[prop] + '<br>';
+						}
+						// Optionally, calculate and add min/max values here if preprocessed
+						
+						this.bindPopup(popupContent).openPopup();
+					});
+					
+					return marker;
+				}
+			}).addTo(map);
+		});
+
+</script>
+
+</body>
+</html>

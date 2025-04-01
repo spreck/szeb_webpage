@@ -1,0 +1,44 @@
+<div class="container mt-3">
+  <h3>About the Cone Scouting Tool</h3>
+  <p>
+    Climate change and wildfire are increasing, stressing limited reforestation seed supplies. Tree stands at low elevation and southern latitudes with hot conditions are potentially both at the highest risk and contain the most climate change-adapted seeds. We present a partially-automated GIS framework to guide seed scouting for tree species in California. Its intended use is to identify areas at the highest risk of extirpation and with the least representation in CalFire's current seedbank.
+  </p>
+  <p>
+    We begin by creating new, highly-accurate species range maps and intersecting each with "seed zones and elevation bands" (SZEBs), used for cataloging the state's seed lots and reforestation efforts. Next, we combined place-based climate change exposure, processed using principal components analysis in RStudio, and potential wildfire intensity indices to rank-order risk each SZEB's range area. We combined three measures of priority for CalFire's nursery operations—current inventory, target seed supplies, and areas of high seed demand—as an operational priority ranking, and combined this metric with the two SZEB risk metrics to identify overall scouting priority areas. We used summed road length in each SZEB as a measure of accessibility, but precise seed survey routes and annual assessments of seed production could provide more comprehensive information about accessibility over time.
+  </p>
+  <p>
+    The outputs from this workflow are then combined with outputs from the climate-adapted seed tool (CAST), which helps identify optimal climate-adapted seed mixtures by SZEB.
+  </p>
+  
+  <h4 class="mt-4">References</h4>
+  <ul class="list-unstyled">
+    <li class="mb-3">
+      <strong>Related Publication:</strong><br>
+      <a href="https://doi.org/10.1016/j.jenvman.2024.123654" target="_blank" rel="noopener">
+        "A spatial triage of at-risk conifer forests to support seed collection efforts and sustainable forestry"
+      </a>
+    </li>
+    <li class="mb-4">
+      <strong>Related Presentation:</strong><br>
+      <a href="https://escholarship.org/uc/item/80q7v997" target="_blank" rel="noopener">
+        "Ecology: Seed Collection, Desert Fires, and Tropical Lagoons" (McConnell, Clancy, 2024)
+      </a>
+      <div class="video-container">
+        <h2>Session 3b video for UC GIS Week 2024</h2>
+        <video controls poster="https://escholarship.org/content/qt80q7v997/supp/Ecology_GMT20241121-210020_Recording_1920x1140.mp4">
+          <source src="https://escholarship.org/content/qt80q7v997/supp/Ecology_GMT20241121-210020_Recording_1920x1140.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <p>
+          <a href="https://escholarship.org/uc/item/80q7v997" target="_blank">
+            View full video on eScholarship
+          </a>
+        </p>
+      </div>
+    </li>
+  </ul>
+  
+  <p class="mt-4 text-end">
+    For questions or feedback, please contact <a href="mailto:jhthorne@ucdavis.edu">jhthorne@ucdavis.edu</a>
+  </p>
+</div>

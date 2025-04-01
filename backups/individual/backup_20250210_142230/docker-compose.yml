@@ -1,0 +1,161 @@
+services:
+  cone-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - nginx-network
+    environment:
+      - FLASK_ENV=development
+      - GEOSERVER_URL=http://conescout.duckdns.org/geoserver
+    volumes:
+      - ./templates:/usr/src/app/templates
+      - ./static:/usr/src/app/static
+      - ./app.py:/usr/src/app/app.py
+      - ./routes.py:/usr/src/app/routes.py
+    depends_on:
+      - mdb_service
+      - postgis
+    restart: always
+    ports:
+      - "8000:8000"
+
+  mdb_service:
+    build:
+      context: ./mdb_service
+      dockerfile: Dockerfile
+    networks:
+      - nginx-network
+    volumes:
+      - ./mdb_service:/app
+    restart: always
+
+  nginx-container:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: custom-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - cone-app
+      - geoserver
+      - mdb_service
+    networks:
+      - nginx-network
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/proxy_params:/etc/nginx/proxy_params:ro
+    restart: always
+
+  geoserver:
+    image: docker.osgeo.org/geoserver:2.26.2
+    environment:
+      - INSTALL_EXTENSIONS=true
+      - STABLE_EXTENSIONS=ysld,h2,importer,vectortiles,monitor,css,wps
+      - COMMUNITY_EXTENSIONS=features-templating,ogcapi-features,ogcapi-images,ogcapi-maps,ogcapi-styles,ogcapi-tiles,mbtiles,mbtiles-store,rat
+      - POSTGRES_DB=geoserver_db
+      - POSTGRES_USER=geoserver
+      - POSTGRES_PASSWORD=23vmoWpostgis
+      - PGHOST=postgis
+      - PGPORT=5432
+      - GEOSERVER_OPTS=-DGEOSERVER_CSRF_DISABLED=true
+      - ENABLE_JSONP=true
+      - MAX_FILTER_RULES=20
+      - OPTIMIZE_LINE_WIDTH=false
+      - JAVA_OPTS=-Xms16G -Xmx64G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication
+    volumes:
+      - geoserver-extensions:/opt/additional_libs
+      - P:/Projects/szeb_geoserver_data:/opt/geoserver_data
+    networks:
+      - nginx-network
+    depends_on:
+      - postgis
+    ports:
+      - "8080:8080"
+    restart: always
+
+  postgis:
+    image: postgis/postgis:15-3.3
+    container_name: postgis_container
+    environment:
+      - POSTGRES_DB=geoserver_db
+      - POSTGRES_USER=geoserver
+      - POSTGRES_PASSWORD=23vmoWpostgis
+      - PGDATA=/var/lib/postgresql/data
+      - POSTGRES_SHARED_BUFFERS=8GB
+      - POSTGRES_EFFECTIVE_CACHE_SIZE=24GB
+      - POSTGRES_WORK_MEM=64MB
+      - POSTGRES_MAINTENANCE_WORK_MEM=2GB
+      - POSTGRES_RANDOM_PAGE_COST=1.1
+      - POSTGRES_EFFECTIVE_IO_CONCURRENCY=200
+    volumes:
+      - I:/postgis_storage:/var/lib/postgresql/data
+      - P:/Projects/szeb_geoserver_data:/opt/geoserver_data
+    shm_size: '8gb'  # Add this line
+    tmpfs:           # And these lines
+      - /dev/shm
+    ulimits:         # And these lines
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - nginx-network
+    ports:
+      - "5432:5432"
+    cpus: '8'
+    mem_limit: 32G
+    mem_reservation: 32G
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - nginx-network
+    restart: always
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    network_mode: host
+    pid: host
+    restart: always
+    volumes:
+      - '/:/host:ro,rbind'
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=23vmoWadmin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - nginx-network
+    restart: always
+
+networks:
+  nginx-network:
+    driver: bridge
+
+volumes:
+  geoserver-extensions:
+    external: true
+  postgis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local

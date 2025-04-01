@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Roads MVT Layer Test</title>
+    <meta charset="utf-8">
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+        }
+        #map { 
+            width: 100%; 
+            height: 100vh; 
+        }
+        .tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid black;
+            padding: 5px;
+            border-radius: 3px;
+            display: none;
+        }
+        .tooltip-header {
+            display: flex;
+            justify-content: space-between;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ccc;
+        }
+        .close-button {
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-weight: bold;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.15.1/css/ol.css">
+    <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.15.1/build/ol.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="tooltip" class="tooltip">
+        <div class="tooltip-header">
+            <span>Attributes</span>
+            <button id="close-button" class="close-button">&times;</button>
+        </div>
+        <div id="tooltip-content"></div>
+    </div>
+    <script src="{{ url_for('static', filename='js/test.js') }}"></script>
+</body>
+</html>

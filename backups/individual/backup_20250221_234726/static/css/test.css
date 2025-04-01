@@ -1,0 +1,11 @@
+/* Minimal CSS for the new test page */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+#root {
+  padding: 1rem;
+}
+ 

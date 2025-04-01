@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="geoserver-url" content="{{ geoserver_url }}">
+  <meta name="geoserver-workspace" content="{{ geoserver_workspace }}">
+  <title>Upload Raster Layer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    .upload-form {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .admin-header {
+      background-color: #004d25;
+      color: white;
+      padding: 15px 0;
+      margin-bottom: 30px;
+    }
+    .btn-back {
+      margin-right: 15px;
+    }
+    .upload-progress {
+      height: 25px;
+      display: none;
+    }
+    .upload-area {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .upload-area.dragover {
+      border-color: #007bff;
+      background-color: #f1f8ff;
+    }
+    .file-info {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #e9ecef;
+      border-radius: 5px;
+    }
+    #uploadStatus {
+      margin-top: 1rem;
+    }
+    #ratInfo {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #d4edda;
+      border-radius: 5px;
+    }
+    .rat-attributes {
+      margin-top: 1rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <header class="admin-header">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1>Upload Raster Layer</h1>
+        <div>
+          <a href="/admin" class="btn btn-outline-light me-2">Back to Admin</a>
+          <a href="/" class="btn btn-outline-light me-2">Back to Application</a>
+          <a href="/admin/logout" class="btn btn-danger">Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="alert alert-info">
+          <strong>Raster Upload Tool</strong> 
+          <p>This tool allows you to upload GeoTIFF raster files with optional Raster Attribute Tables (RAT). 
+          The system will automatically detect RAT information and allow you to generate styles based on the attributes.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload-form">
+      <form id="rasterUploadForm">
+        <!-- Workspace Selection -->
+        <div class="mb-3">
+          <label for="workspace" class="form-label">Workspace</label>
+          <select class="form-select" id="workspace" name="workspace" required>
+            <option value="{{ geoserver_workspace }}" selected>{{ geoserver_workspace }}</option>
+          </select>
+        </div>
+
+        <!-- Store Name -->
+        <div class="mb-3">
+          <label for="storeName" class="form-label">Store Name</label>
+          <input type="text" class="form-control" id="storeName" name="storeName" placeholder="Enter a name for the new store" required>
+          <div class="form-text">This will be the name used in GeoServer for this data. Use alphanumeric characters and underscores only.</div>
+        </div>
+
+        <!-- Layer Name -->
+        <div class="mb-3">
+          <label for="layerName" class="form-label">Layer Name</label>
+          <input type="text" class="form-control" id="layerName" name="layerName" placeholder="Enter a name for the layer" required>
+          <div class="form-text">Name that will be used to access this layer. If left blank, the store name will be used.</div>
+        </div>
+
+        <!-- Upload -->
+        <div class="mb-3">
+          <label class="form-label">Upload GeoTIFF</label>
+          <div class="upload-area" id="uploadArea">
+            <p><i class="bi bi-cloud-upload"></i> Drag & drop your GeoTIFF file here, or click to select</p>
+            <p class="small text-muted">Make sure to include the .aux.xml file if you have RAT data</p>
+            <input type="file" id="rasterFile" name="rasterFile" accept=".tif,.tiff,.geotiff,.aux.xml" class="d-none" multiple>
+          </div>
+          <div class="file-info" id="fileInfo">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 id="fileName">filename.tif</h6>
+                <p class="mb-0" id="fileSize">Size: 0 MB</p>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger" id="removeFile">Remove</button>
+            </div>
+          </div>
+          <div class="progress upload-progress" id="uploadProgress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="mb-3">
+          <button type="submit" class="btn btn-primary" id="uploadButton">Upload Raster</button>
+        </div>
+      </form>
+
+      <div id="uploadStatus"></div>
+
+      <!-- RAT Information (shown after upload if RAT data detected) -->
+      <div id="ratInfo">
+        <h5>Raster Attribute Table Detected!</h5>
+        <p>The system has detected a Raster Attribute Table (RAT) with the following attributes:</p>
+        
+        <div class="mb-3">
+          <label for="ratBand" class="form-label">Select Band</label>
+          <select class="form-select" id="ratBand">
+            <!-- Will be populated dynamically -->
+          </select>
+        </div>
+        
+        <div class="mb-3">
+          <label for="ratAttribute" class="form-label">Select Classification Attribute</label>
+          <select class="form-select" id="ratAttribute">
+            <!-- Will be populated dynamically -->
+          </select>
+        </div>
+        
+        <div class="rat-attributes" id="ratAttributes">
+          <table class="table table-striped table-sm">
+            <thead>
+              <tr>
+                <th>Value</th>
+                <th>Classification</th>
+                <th>Other Attributes</th>
+              </tr>
+            </thead>
+            <tbody id="ratAttributesBody">
+              <!-- Will be populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="mb-3">
+          <label for="styleName" class="form-label">Style Name</label>
+          <input type="text" class="form-control" id="styleName" placeholder="Auto-generated based on layer name">
+        </div>
+        
+        <button type="button" class="btn btn-success" id="generateStyleButton">Generate RAT Style</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom Script -->
+  <script src="{{ url_for('static', filename='js/admin/raster-uploader.js') }}"></script>
+</body>
+</html>

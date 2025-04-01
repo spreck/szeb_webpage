@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - Cone Scouting Tool{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="display-1 text-muted">500</h1>
+                    <h2 class="mb-4">Server Error</h2>
+                    <p class="lead">Something went wrong on our servers.</p>
+                    <p>We're working on fixing the issue. Please try again later.</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-home me-2"></i>Return to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

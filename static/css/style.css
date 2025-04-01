@@ -1,0 +1,456 @@
+/* ==========================================
+   General Reset & Base Styles
+   ========================================== */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Arial', sans-serif;
+}
+
+/* ==========================================
+   Header & Navigation
+   ========================================== */
+header {
+    text-align: center;
+    padding: 10px 0;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+header h1 {
+    margin: 0;
+    color: #004d25;
+    font-size: 1.5rem; /* Decrease size (default is 2rem) */
+    font-family: 'Helvetica', sans-serif; /* Change font */
+    font-weight: 400; /* Adjust weight */
+}
+
+/* ==========================================
+   Layout & Container Styles
+   ========================================== */
+.map-with-sidebar {
+    display: flex;
+    height: calc(90vh - 120px);
+    position: relative;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-right: 2px solid #ddd;
+    width: 250px !important;
+    flex: 0 0 250px;
+    height: 100%;
+    overflow-y: auto; /* Enables vertical scrolling */
+    max-height: calc(90vh - 120px); /* Prevents overflow */
+    scrollbar-width: thin; /* Firefox scrollbar */
+    scrollbar-color: #004d25 #f8f9fa; /* Scrollbar color */
+}
+
+/* Scrollbar for WebKit browsers (Chrome, Safari) */
+.sidebar::-webkit-scrollbar {
+    width: 8px; /* Scrollbar width */
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #f8f9fa; /* Track background */
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: #004d25; /* Scrollbar color */
+    border-radius: 4px;
+}
+
+/* Responsive Fix */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100% !important;
+        flex: none;
+        border-right: none;
+        border-bottom: 2px solid #ddd;
+        max-height: 50vh; /* Ensure it doesn't take full height on small screens */
+    }
+}
+
+
+.sidebar.loading {
+    position: relative;
+}
+
+.sidebar.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+/* Map Container Styles */
+.map-container {
+    flex: 1;
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* ==========================================
+   Dropdown & Form Elements
+   ========================================== */
+.sidebar label {
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+    display: block;
+    background-color: white; /* White background */
+    border: 2px solid #004d25; /* Green border */
+    border-radius: 10px; /* Rounded corners */
+    padding: 5px 10px; /* Add some padding for spacing */
+}
+
+
+.form-select {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #004d25;
+    border-radius: 5px;
+    background-color: white;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.form-select:hover {
+    border-color: #006633;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #008040;
+    box-shadow: 0 0 5px rgba(0, 77, 37, 0.3);
+}
+
+/* Dropdown Section Styling */
+.dropdown-header {
+    font-weight: bold;
+    color: #000000;
+    background-color: #f0f0f0;
+    padding: 4px;
+}
+
+.dropdown-divider {
+    color: #999;
+    background-color: #f8f8f8;
+    text-align: center;
+}
+
+/* ==========================================
+   Legend & Info Panels
+   ========================================== */
+#legend {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+
+/* ==========================================
+   Fixed Attribute Table Styles
+   ========================================== */
+.table-container {
+    max-width: 100%;
+    overflow-x: auto; /* Ensures horizontal scrolling */
+    padding: 0.5rem;
+}
+
+.table-scroll {
+    overflow-x: auto;
+    display: block;
+    width: 100%;
+}
+
+.mini-attr-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto; /* Ensures column widths auto-adjust */
+}
+
+.mini-attr-table th, .mini-attr-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    white-space: nowrap; /* Prevents wrapping */
+}
+
+.mini-attr-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+.mini-attr-table tbody td {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+    .mini-attr-table {
+        font-size: 0.85rem;
+    }
+}
+
+/* Moves both the map and table up when clicking a point */
+.map-container-move-up {
+    transform: translateY(-100px); /* Adjust this value as needed */
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Moves only the table */
+.table-move-up {
+    transform: translateY(-100px); /* Adjust to match map */
+    transition: transform 0.3s ease-in-out;
+}
+
+
+/* ==========================================
+   Message Styles
+   ========================================== */
+.loading-message,
+.no-data-message,
+.error-message {
+    text-align: center;
+    padding: 1rem;
+}
+
+.error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+}
+
+/* ==========================================
+   Debug & Utility Classes
+   ========================================== */
+.zoom-level-display {
+    background: white;
+    padding: 5px;
+    border-radius: 4px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    font-size: 12px;
+}
+
+/* ==========================================
+   Video Container Styles
+   ========================================== */
+.video-container {
+    text-align: center;
+    max-width: 800px;
+    margin: 20px auto;
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 15px;
+}
+
+.video-container video {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+}
+
+.video-container p {
+    margin-top: 10px;
+    font-size: 1rem;
+}
+
+.video-container a {
+    color: #004d25;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.video-container a:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================
+   Responsive Design
+   ========================================== */
+@media (max-width: 768px) {
+	.map-with-sidebar {
+		display: flex;
+		flex-direction: column;
+		height: calc(90vh - 120px);
+		position: relative;
+		transition: transform 0.3s ease-in-out;
+	}
+
+    
+    .sidebar {
+        width: 100% !important;
+        flex: none;
+        border-right: none;
+        border-bottom: 2px solid #ddd;
+    }
+    
+    .map-container {
+        height: 50vh;
+    }
+    
+    .mini-attr-table {
+        font-size: 0.85rem;
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+}
+
+/* ROI Tools Styling - Matches Species & Attribute Dropdowns */
+.roi-tools {
+    background-color: white;
+    border: 2px solid #004d25;
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-top: 15px;
+}
+
+.roi-tools label {
+    font-weight: bold;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+    display: block;
+    background-color: white;
+    border: 2px solid #004d25;
+    border-radius: 10px;
+    padding: 5px 10px;
+    text-align: center;
+}
+
+.roi-tools input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #004d25;
+    border-radius: 5px;
+    background-color: white;
+    margin-bottom: 10px;
+}
+
+.roi-tools button {
+    width: 100%;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    padding: 8px;
+    font-weight: bold;
+}
+
+.roi-tools .btn-primary {
+    background-color: #004d25;
+    border-color: #004d25;
+}
+
+.roi-tools .btn-primary:hover {
+    background-color: #006633;
+    border-color: #006633;
+}
+
+.roi-tools .btn-secondary {
+    background-color: #808080;
+    border-color: #808080;
+}
+
+.roi-tools .btn-secondary:hover {
+    background-color: #666666;
+    border-color: #666666;
+}
+/* ROI Tools - File Input Formatting */
+.roi-tools .file-name {
+    display: block;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+/* Hide default file input */
+.file-input-wrapper {
+    position: relative;
+    width: 100%;
+    text-align: center;
+}
+
+.file-input-wrapper input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0; /* Completely hide default input */
+    cursor: pointer;
+}
+
+/* Style the custom file button */
+#customFileButton {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #004d25;
+    border-radius: 5px;
+    background-color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#customFileButton:hover {
+    background-color: #f0f0f0;
+}
+
+/* Ensure the file name appears below */
+.file-name {
+    display: block;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #333;
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+.tab-content {
+    height: calc(100vh - 60px); /* Adjust based on header height */
+}
+.tab-pane {
+    height: 100%;
+}
+
+.highlight-glow {
+  filter: drop-shadow(0 0 5px rgba(0, 0, 255, 0.7));
+  animation: glow 1.5s infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    filter: drop-shadow(0 0 5px rgba(0, 0, 255, 0.7));
+  }
+  to {
+    filter: drop-shadow(0 0 10px rgba(0, 0, 255, 1));
+  }
+}

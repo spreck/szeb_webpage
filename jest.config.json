@@ -1,0 +1,7 @@
+{
+  "testEnvironment": "jsdom",
+  "moduleDirectories": ["node_modules", "static/js"],
+  "transform": {},
+  "setupFilesAfterEnv": ["./tests/setup.js"],
+  "testTimeout": 10000
+}

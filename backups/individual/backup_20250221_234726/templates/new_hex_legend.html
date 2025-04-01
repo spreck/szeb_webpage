@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic Interpolated Hex Grid Visualization</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 80vh; width: 100%; }
+        #propertySelector, #legend { position: absolute; top: 20px; left: 20px; z-index: 1000; background: white; padding: 10px; }
+        #legend { top: auto; bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<select id="propertySelector"></select>
+<div id="map"></div>
+<div id="legend"></div>
+
+<script src="https://unpkg.com/@turf/turf"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script src="https://unpkg.com/rbush"></script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const map = L.map('map').setView([38.5816, -121.4944], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let geojsonLayer;
+    const propertySelector = document.getElementById('propertySelector');
+    const wmsBaseEPUrl = 'http://localhost:8080/geoserver/EvacuationProjects/ows';
+    const geojsonLayerUrl = `${wmsBaseEPUrl}?service=WFS&version=1.0.0&request=GetFeature&typeName=EvacuationProjects:Sacramento_all_data&outputFormat=application/json`;
+
+    let globalMin, globalMax, colorScale, breaks;
+	const steps = 10; // Centralized steps definition
+
+	function fetchDataAndInitialize() {
+		fetch(geojsonLayerUrl)
+			.then(response => response.json())
+			.then(data => {
+				if (data.features.length > 0) {
+					initializePropertySelector(data.features[0].properties, "WFI_nnrm");
+					// Directly use the fetched data for the initial visualization
+					updateVisualization(data); // Pass 'data' directly for initial setup
+				}
+			})
+			.catch(error => console.error('Error fetching GeoJSON:', error));
+	}
+
+
+    function initializePropertySelector(properties, selectedProperty) {
+        for (const prop in properties) {
+            if (properties.hasOwnProperty(prop)) {
+                const option = document.createElement('option');
+                option.value = prop;
+                option.innerHTML = prop;
+                if (prop === selectedProperty) option.selected = true;
+                propertySelector.appendChild(option);
+            }
+        }
+    }
+
+    function updateVisualization(data) {
+        const selectedProperty = propertySelector.value;
+        const values = data.features.map(feature => feature.properties[selectedProperty]);
+        globalMin = Math.min(...values);
+        globalMax = Math.max(...values);
+
+		// Update the color scale and breaks based on new data
+		colorScale = d3.scaleLinear().domain([globalMin, globalMax]).range([0, 1]);
+		breaks = generateBreaks(steps); // Assuming generateBreaks() is correctly defined elsewhere
+
+
+		//updateHexGrid(data);
+        //updateHexGridNN(data, 18);
+		//updateSquareGrid
+		//updateVisualizationWithInterpolation(data);
+        updatePoints(data);
+        updateLegend();
+    }
+	
+	    // Adjusted generateBreaks function
+    function generateBreaks(steps) {
+        let breaks = [];
+        const range = globalMax - globalMin;
+        const stepSize = range / steps;
+        for (let i = 0; i <= steps; i++) {
+            breaks.push(globalMin + i * stepSize);
+        }
+        return breaks;
+    }
+	
+	function updateSquareGrid(data, cellSide) {
+		const selectedProperty = propertySelector.value;
+		const bbox = turf.bbox(data);
+		const squareGrid = turf.squareGrid(bbox, cellSide, {units: 'kilometers'});
+
+		// Preparing points for spatial indexing
+		const points = data.features.map(feature => ({
+			type: 'Feature',
+			properties: feature.properties,
+			geometry: {
+				type: 'Point',
+				coordinates: feature.geometry.coordinates
+			}
+		}));
+
+		// Assign values to squareGrid cells
+		squareGrid.features.forEach(cell => {
+			let totalValue = 0;
+			let count = 0;
+			points.forEach(point => {
+				if (turf.booleanPointInPolygon(point, cell)) {
+					totalValue += point.properties[selectedProperty];
+					count += 1;
+				}
+			});
+			cell.properties.value = count > 0 ? totalValue / count : 0; // Assign average value to the cell
+		});
+
+		// Visualization
+		L.geoJSON(squareGrid, {
+			style: feature => ({
+				fillColor: getColorForValue(feature.properties.value, globalMin, globalMax),
+				weight: 1,
+				color: '#555',
+				fillOpacity: 0.5
+			}),
+			isCustomLayer: true
+		}).addTo(map);
+	}
+
+
+	function updateHexGrid(data) {
+		const selectedProperty = propertySelector.value;
+		
+		// Prepare the points FeatureCollection
+		const points = turf.featureCollection(data.features.map(feature => {
+			return turf.point([feature.geometry.coordinates[0], feature.geometry.coordinates[1]], {
+				value: feature.properties[selectedProperty]
+			});
+		}));
+
+		// Generate the hex grid
+		const bbox = turf.bbox(points);
+		const cellSide = 0.25; // Cell side in kilometers
+		const hexGrid = turf.hexGrid(bbox, cellSide, {units: 'kilometers'});
+
+		// Convex hull for filtering hexes outside the area of interest
+		const convexHull = turf.convex(points);
+
+		// First pass: assign values to hexes with points
+		hexGrid.features.forEach(hex => {
+			const pointsWithin = turf.pointsWithinPolygon(points, hex);
+			let totalValue = 0;
+			pointsWithin.features.forEach(point => {
+				totalValue += point.properties.value;
+			});
+			if (pointsWithin.features.length > 0) {
+				hex.properties.avgValue = totalValue / pointsWithin.features.length;
+			}
+		});
+
+		// Second pass: interpolate values for hexes without points
+		hexGrid.features.forEach(hex => {
+			if (!hex.properties.avgValue) {
+				let weightedSum = 0;
+				let totalWeight = 0;
+				const hexCenter = turf.center(hex);
+
+				data.features.forEach(feature => {
+					const point = turf.point([feature.geometry.coordinates[0], feature.geometry.coordinates[1]]);
+					const distance = turf.distance(hexCenter, point, {units: 'kilometers'});
+					if (distance > 0) { // Avoid division by zero
+						const weight = 1 / Math.pow(distance, 2); // Using IDW with power of 2
+						weightedSum += feature.properties[selectedProperty] * weight;
+						totalWeight += weight;
+					}
+				});
+
+				if (totalWeight > 0) {
+					hex.properties.avgValue = weightedSum / totalWeight;
+				}
+			}
+		});
+
+		// Filtering out hexes outside the convex hull
+		const filteredHexGrid = turf.featureCollection(hexGrid.features.filter(hex => {
+			return turf.intersect(hex, convexHull);
+		}));
+
+		// Visualizing the hex grid
+		L.geoJSON(filteredHexGrid, {
+			style: feature => ({
+				fillColor: getColorForValue(feature.properties.avgValue),
+				weight: 0.5,
+				color: '#000',
+				fillOpacity: 0.6
+			}),
+			isCustomLayer: true
+		}).addTo(map);
+	}
+
+
+
+function updatePoints(data) {
+    // Ensure existing layer is removed if it exists
+    if (geojsonLayer) {
+        map.removeLayer(geojsonLayer);
+    }
+
+    // Now create a new GeoJSON layer with the current data and selected property
+    geojsonLayer = L.geoJSON(data, {
+        pointToLayer: function(feature, latlng) {
+            const value = feature.properties[propertySelector.value]; // Use the currently selected property
+            const color = getColorForValue(value); // 'getColorForValue' utilizes the global 'colorScale'
+            return L.circleMarker(latlng, {
+                radius: 8,
+                fillColor: color,
+                color: '#000',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
+        },
+        isCustomLayer: true
+    }).addTo(map);
+}
+
+
+    function getColorForValue(value) {
+        return d3.interpolateTurbo(colorScale(value));
+    }
+
+
+	
+	function updateHexGridNN(data, N) {
+		const selectedProperty = propertySelector.value;
+		
+		// Initialize RBush for spatial indexing
+		const tree = new RBush();
+		const pointsForTree = data.features.map((feature, id) => {
+			const [x, y] = feature.geometry.coordinates;
+			return {
+				minX: x,
+				minY: y,
+				maxX: x,
+				maxY: y,
+				id: id,
+				value: feature.properties[selectedProperty]
+			};
+		});
+		tree.load(pointsForTree);
+
+		const bbox = turf.bbox(data);
+		const cellSide = 0.25; // Cell side in kilometers
+		const hexGrid = turf.hexGrid(bbox, cellSide, {units: 'kilometers'});
+
+		hexGrid.features.forEach(hex => {
+			const hexCenter = turf.center(hex).geometry.coordinates;
+			// Find nearest N points using the spatial index
+			const nearestPoints = tree.search({
+				minX: hexCenter[0],
+				minY: hexCenter[1],
+				maxX: hexCenter[0],
+				maxY: hexCenter[1]
+			}).sort((a, b) => {
+				const distA = Math.pow(a.minX - hexCenter[0], 2) + Math.pow(a.minY - hexCenter[1], 2);
+				const distB = Math.pow(b.minX - hexCenter[0], 2) + Math.pow(b.minY - hexCenter[1], 2);
+				return distA - distB;
+			}).slice(0, N);
+
+			let weightedSum = 0;
+			let totalWeight = 0;
+			nearestPoints.forEach(point => {
+				const distance = Math.sqrt(Math.pow(point.minX - hexCenter[0], 2) + Math.pow(point.minY - hexCenter[1], 2));
+				if (distance > 0) { // Avoid division by zero
+					const weight = 1 / Math.pow(distance, 2); // IDW
+					weightedSum += point.value * weight;
+					totalWeight += weight;
+				}
+			});
+
+			const interpolatedValue = totalWeight > 0 ? weightedSum / totalWeight : 0;
+			hex.properties.value = interpolatedValue;
+		});
+
+		// Visualization
+		L.geoJSON(hexGrid, {
+			style: feature => ({
+				fillColor: getColorForValue(feature.properties.value),
+				weight: 0.5,
+				color: '#000',
+				fillOpacity: 0.6
+			}),
+			isCustomLayer: true
+		}).addTo(map);
+	}
+
+	
+	function updateSquareGrid(data, cellSide) {
+		// Similar setup to hexGrid but with squareGrid
+		const bbox = turf.bbox(data);
+		const squareGrid = turf.squareGrid(bbox, cellSide, {units: 'kilometers'});
+
+		// Assume interpolation or direct assignment of values to squareGrid cells is similar to updateHexGridNN
+
+		// Visualization
+		L.geoJSON(squareGrid, {
+			style: feature => ({
+				// Similar styling to hexGrid
+			}),
+			isCustomLayer: true
+		}).addTo(map);
+	}
+	
+	function updateVisualizationWithInterpolation(data) {
+		// Assuming `data` is your FeatureCollection of points with the "WFI_nnrm" property
+		const selectedProperty = "WFI_nnrm"; // Set to your property of interest
+		const cellSize = 0.25; // Cell size in kilometers
+		const gridType = 'point'; // Choose 'square', 'hex', or 'point'
+		const options = {
+			gridType: gridType,
+			property: selectedProperty,
+			units: 'kilometers',
+			weight: 1 // Adjust IDW weight as needed
+		};
+
+		const interpolatedGrid = turf.interpolate(data, cellSize, options);
+
+		// Visualization: Directly visualize the interpolated grid
+		L.geoJSON(interpolatedGrid, {
+			style: feature => ({
+				fillColor: getColorForValue(feature.properties[selectedProperty], globalMin, globalMax),
+				color: '#000',
+				weight: 1,
+				fillOpacity: 0
+			}),
+			isCustomLayer: true
+		}).addTo(map);
+
+		// Optionally, if using square grids and wanting isobands:
+		// const breaks = [10, 20, 30]; // Define your breaks for isobands
+		updateIsobands(interpolatedGrid); // Adjust `updateIsobands` as needed to work with this grid
+	}
+
+	
+	function updateIsobands(interpolatedGrid) {
+		// Assuming `interpolatedGrid` is a FeatureCollection of squares/hexes from `turf.interpolate`
+		const isobands = turf.isobands(interpolatedGrid, breaks, {zProperty: 'WFI_nnrm'});
+
+		L.geoJSON(isobands, {
+			style: feature => ({
+				fillColor: getColorForValue((feature.properties.lower + feature.properties.upper) / 2),
+				weight: 2,
+				color: '#222',
+				fillOpacity: 0.7
+			}),
+			onEachFeature: (feature, layer) => {
+				layer.bindPopup(`Value range: ${feature.properties.lower} - ${feature.properties.upper}`);
+			},
+			isCustomLayer: true
+		}).addTo(map);
+	}
+
+
+    // Modification in the updateLegend function to use breaks
+    function updateLegend() {
+        let gradient = `<svg width="200" height="${20 * (breaks.length - 1)}">`;
+        breaks.forEach((breakValue, i) => {
+            const color = getColorForValue(breakValue);
+            if (i < breaks.length - 1) { // Avoid drawing beyond the last break
+                gradient += `<rect x="0" y="${20 * i}" width="20" height="20" style="fill: ${color};"></rect>`;
+                gradient += `<text x="25" y="${20 * i + 10}" alignment-baseline="middle">${breakValue.toFixed(2)}</text>`;
+            }
+        });
+        gradient += `</svg>`;
+        document.getElementById('legend').innerHTML = `<div><b>Legend</b></div>${gradient}`;
+    }
+
+
+    fetchDataAndInitialize();
+});
+</script>
+
+</body>
+</html>
+
+

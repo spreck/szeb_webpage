@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic Property Visualization</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 80vh; width: 100%; }
+        #propertySelector, #legend { position: absolute; z-index: 1000; background: white; padding: 10px; }
+        #propertySelector { top: 20px; left: 20px; }
+        #legend { bottom: 20px; left: 20px; }
+    </style>
+</head>
+<body>
+
+<select id="propertySelector"></select>
+<div id="map"></div>
+<div id="legend"></div>
+<div id="interpolatedMap"></div> <!-- Container for the new map -->
+
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script type="module">
+	import { scaleLinear } from 'https://cdn.jsdelivr.net/npm/d3-scale@3/+esm';
+    import { interpolateTurbo } from 'https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3/+esm';  
+    import * as L from 'https://unpkg.com/leaflet@1.7.1/dist/leaflet-src.esm.js';
+
+
+    const map = L.map('map').setView([34.5828, -117.4092], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let geojsonLayer;
+    let geojsonData;
+    const propertySelector = document.getElementById('propertySelector');
+    const legend = document.getElementById('legend');
+
+    const wmsBaseEPUrl = 'http://localhost:8080/geoserver/EvacuationProjects/ows';
+    const geojsonLayerUrl = `${wmsBaseEPUrl}?service=WFS&version=1.0.0&request=GetFeature&typeName=EvacuationProjects:Adelanto_all_data&outputFormat=application/json`;
+
+    fetch(geojsonLayerUrl)
+        .then(response => response.json())
+        .then(data => {
+            geojsonData = data;
+            initializePropertySelector(geojsonData.features[0].properties);
+            updateMapVisualization(); // Initially update the map visualization
+        })
+        .catch(error => console.error('Error fetching GeoJSON:', error));
+
+    function initializePropertySelector(properties) {
+        for (const prop in properties) {
+            const option = document.createElement('option');
+            option.value = prop;
+            option.innerHTML = prop;
+            propertySelector.appendChild(option);
+        }
+        propertySelector.onchange = updateMapVisualization; // Update visualization on property change
+    }
+
+	function updateMapVisualization() {
+		if (geojsonLayer) {
+			map.removeLayer(geojsonLayer); // Remove existing layer if any
+		}
+
+		const selectedProperty = propertySelector.value;
+		const values = geojsonData.features.map(feature => feature.properties[selectedProperty]);
+		const min = Math.min(...values);
+		const max = Math.max(...values);
+
+		// Create a D3 scale to map data values to a [0, 1] interval
+		const colorScale = scaleLinear().domain([min, max]).range([0, 1]);
+
+		// Update the legend to reflect the new scale
+		updateLegend(min, max);
+
+		geojsonLayer = L.geoJSON(geojsonData, {
+			pointToLayer: function (feature, latlng) {
+				const value = feature.properties[selectedProperty];
+				// Use the color scale to get a normalized value for the color interpolation
+				const normalizedValue = colorScale(value);
+				const color = interpolateTurbo(normalizedValue); // Get the color from interpolateTurbo
+				return L.circleMarker(latlng, {
+					radius: 8,
+					fillColor: color,
+					color: '#000',
+					weight: 1,
+					opacity: 1,
+					fillOpacity: 0.8
+				});
+			}
+		}).addTo(map);
+	}
+
+
+	function updateLegend(min, max) {
+		const colorScale = scaleLinear().domain([min, max]).range([0, 1]);
+		const legend = document.getElementById('legend');
+		const steps = 10; // Define how many steps you want in the legend
+		const svgWidth = 200; // Set the width of the legend
+		const svgHeight = 20; // Set the height of each color band in the legend
+
+		// Create the SVG element for the legend
+		let gradient = `<svg width="${svgWidth}" height="${svgHeight * steps}">`;
+
+		// Generate color stops and labels
+		for (let i = 0; i <= steps; i++) {
+			const value = min + (i / steps) * (max - min);
+			const color = interpolateTurbo(colorScale(value));
+			gradient += `<rect x="0" y="${svgHeight * i}" width="20" height="${svgHeight}" style="fill: ${color};"></rect>`;
+			gradient += `<text x="25" y="${svgHeight * i + svgHeight / 2}" alignment-baseline="middle">${value.toFixed(2)}</text>`;
+		}
+
+		gradient += `</svg>`;
+		legend.innerHTML = `<div><b>Legend</b></div>${gradient}`;
+	}
+
+</script>
+
+</body>
+</html>

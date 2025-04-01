@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cone Scouting Tool</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.css" />
+  
+  <!-- Bootstrap for Tabs & UI Enhancements -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  
+  <!-- React & Babel -->
+  <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Cone Scouting Tool</h1>
+  </header>
+  
+  <div class="container-fluid">
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" id="about-tab" data-bs-toggle="tab" href="#about" role="tab">About</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="map-tab" data-bs-toggle="tab" href="#map-section" role="tab">Map</a>
+      </li>
+    </ul>
+    
+    <div class="tab-content" id="mainTabContent">
+      <!-- Map Section -->
+      <div class="tab-pane fade" id="map-section" role="tabpanel">
+        <div class="map-with-sidebar">
+          <aside class="sidebar">
+            <label for="rasterSelect">Species</label>
+            <select id="rasterSelect" class="form-select"></select>
+            <label for="attributeSelect">Attribute</label>
+			<select id="attributeSelect" class="form-select"></select>
+			<label>
+			  <input type="checkbox" id="topTenOnlyCheckbox" /> Show Top 10% for Total SZEB Rank <!-- &amp; Combined Risk -->
+			</label>
+
+            <div id="legend" class="card">
+              <div class="card-header">Legend</div>
+              <div class="card-body" id="legend-content">Select an attribute</div>
+            </div>
+            <!-- ROI Tools -->
+            <div class="roi-tools">
+              <div class="file-input-wrapper">
+                <button id="customFileButton" class="btn btn-outline-dark">Choose File</button>
+                <input type="file" id="roiFileInput" accept=".zip,.geojson,.kml,.kmz,.gpkg">
+              </div>
+              <div id="fileNameDisplay" class="file-name">No file chosen</div>
+              <button id="uploadRoiButton" class="btn btn-primary">Upload ROI</button>
+              <button id="zoomToRoiButton" class="btn btn-secondary" disabled>Zoom to ROI</button>
+              <!-- New Clear ROI link -->
+              <a href="#" id="clearRoiLink" style="font-size: 0.9em; display: block; margin-top: 5px;">Clear Region of Interest (ROI)</a>
+              <!-- New Download Intersection Data link -->
+              <a href="#" id="downloadVectorBtn" style="font-size: 0.9em; display: block; margin-top: 5px;">Download Vector Data</a>
+<!-- 			  <a href="#" id="downloadRasterBtn" style="font-size: 0.9em; display: block; margin-top: 5px;">Download Raster Data</a> -->
+			<a href="#" id="downloadCurrentViewBtn" style="font-size: 0.9em; display: block; margin-top: 5px;">Download Current View</a>
+
+            </div>
+          </aside>
+          <main class="map-container">
+            <div id="map"></div>
+          </main>
+        </div>
+        
+        <!-- Feature Info Table -->
+        <div id="table-container">
+          <div id="clickInfoTable" class="card">
+            <div class="card-header">Feature Info</div>
+            <div class="card-body" id="clickInfoBody">Click on the map to get info.</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- About Section -->
+      <div class="tab-pane fade show active" id="about" role="tabpanel">
+        <div class="container mt-3">
+          <h3>About the Cone Scouting Tool</h3>
+          <p>
+            Climate change and wildfire are increasing, stressing limited reforestation seed supplies. Tree stands at low elevation and southern latitudes with hot conditions are potentially both at the highest risk and contain the most climate change-adapted seeds. We present a partially-automated GIS framework to guide seed scouting for tree species in California. Its intended use is to identify areas at the highest risk of extirpation and with the least representation in CalFire's current seedbank.
+          </p>
+          <p>
+            We begin by creating new, highly-accurate species range maps and intersecting each with "seed zones and elevation bands" (SZEBs), used for cataloging the state's seed lots and reforestation efforts. Next, we combined place-based climate change exposure, processed using principal components analysis in RStudio, and potential wildfire intensity indices to rank-order risk each SZEB's range area. We combined three measures of priority for CalFire's nursery operations—current inventory, target seed supplies, and areas of high seed demand—as an operational priority ranking, and combined this metric with the two SZEB risk metrics to identify overall scouting priority areas. We used summed road length in each SZEB as a measure of accessibility, but precise seed survey routes and annual assessments of seed production could provide more comprehensive information about accessibility over time.
+          </p>
+          <p>
+            The outputs from this workflow are then combined with outputs from the climate-adapted seed tool (CAST), which helps identify optimal climate-adapted seed mixtures by SZEB.
+          </p>
+          
+          <h4 class="mt-4">References</h4>
+          <ul class="list-unstyled">
+            <li class="mb-3">
+              <strong>Related Publication:</strong><br>
+              <a href="https://doi.org/10.1016/j.jenvman.2024.123654" target="_blank" rel="noopener">
+                "A spatial triage of at-risk conifer forests to support seed collection efforts and sustainable forestry"
+              </a>
+            </li>
+            <li class="mb-4">
+              <strong>Related Presentation:</strong><br>
+              <a href="https://escholarship.org/uc/item/80q7v997" target="_blank" rel="noopener">
+                "Ecology: Seed Collection, Desert Fires, and Tropical Lagoons" (McConnell, Clancy, 2024)
+              </a>
+              <div class="video-container">
+                <h2>Session 3b video for UC GIS Week 2024</h2>
+                <video controls poster="https://escholarship.org/content/qt80q7v997/supp/Ecology_GMT20241121-210020_Recording_1920x1140.mp4">
+                  <source src="https://escholarship.org/content/qt80q7v997/supp/Ecology_GMT20241121-210020_Recording_1920x1140.mp4" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
+                <p>
+                  <a href="https://escholarship.org/uc/item/80q7v997" target="_blank">
+                    View full video on eScholarship
+                  </a>
+                </p>
+              </div>
+            </li>
+          </ul>
+          
+          <p class="mt-4 text-end">
+            For questions or feedback, please contact <a href="mailto:jhthorne@ucdavis.edu">jhthorne@ucdavis.edu</a>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  
+  <!-- React Component for Attribute Table -->
+  <script type="text/babel">
+    const AttributeTable = ({ properties, rasterConfig }) => {
+      const excludedKeys = [
+        "Shape_Length",
+        "Shape_Area",
+        "OBJECTID",
+        "ClimateExposureRiskCategory",
+        "FireIntensityRiskCategory",
+        "CombinedRiskCategory",
+        "LandownerDemandCategory",
+        "ProjectedDemandCategory",
+        "CurrentSupplyCategory",
+        "OperationalPriorityCategory"
+      ];
+      
+      let attributeDisplayMapping = {};
+      for (let sectionKey in rasterConfig.attributes) {
+        const section = rasterConfig.attributes[sectionKey];
+        for (let attrKey in section.items) {
+          attributeDisplayMapping[attrKey] = section.items[attrKey];
+        }
+      }
+      
+      let columns = [];
+      Object.keys(properties).forEach(key => {
+        if (excludedKeys.includes(key)) return;
+        if (key === "SZEB") {
+          const value = properties[key] || "";
+          const parts = value.split("_");
+          columns.push({ key: "SZEB_seed", header: "Seed Zone", valueParts: parts });
+          columns.push({ key: "SZEB_elev", header: "Elevation Band", valueParts: parts });
+        } else if (key === "SZEB_area_km2") {
+          columns.push({
+            key: key,
+            header: "% of SZEB"
+          });
+        } else {
+          columns.push({
+            key: key,
+            header: attributeDisplayMapping[key] ? attributeDisplayMapping[key] : key,
+          });
+        }
+      });
+      
+      return (
+        <div>
+          <h4>
+            {rasterConfig.displayName} Attributes (<i>{rasterConfig.scientificName}</i>)
+          </h4>
+          <div className="table-container">
+            <table className="mini-attr-table">
+              <thead>
+                <tr>
+                  {columns.map(col => (
+                    <th key={col.key}>{col.header}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {columns.map(col => {
+                    if (col.key === "SZEB_seed") {
+                      const seedZone = col.valueParts && col.valueParts[0] ? col.valueParts[0].trim() : "";
+                      return <td key={col.key}>{seedZone}</td>;
+                    } else if (col.key === "SZEB_elev") {
+                      const elev = col.valueParts && col.valueParts[1] ? col.valueParts[1].trim() : "";
+                      return <td key={col.key}>{elev}</td>;
+                    } else if (col.key === "range_area_km2") {
+                      let value = parseFloat(properties[col.key]);
+                      if (!isNaN(value)) {
+                        const acres = value * 247.105;
+                        value = acres.toFixed(1);
+                      }
+                      return <td key={col.key}>{value}</td>;
+                    } else if (col.key === "roads_km") {
+                      let value = parseFloat(properties[col.key]);
+                      if (!isNaN(value)) {
+                        const miles = value * 0.621371;
+                        value = miles.toFixed(1);
+                      }
+                      return <td key={col.key}>{value}</td>;
+                    } else if (col.key === "SZEB_area_km2") {
+                      let rangeArea = parseFloat(properties["range_area_km2"]);
+                      let totalSzeb = parseFloat(properties["SZEB_area_km2"]);
+                      let value = "";
+                      if (!isNaN(rangeArea) && !isNaN(totalSzeb) && totalSzeb !== 0) {
+                        value = ((rangeArea / totalSzeb) * 100).toFixed(1) + "%";
+                      }
+                      return <td key={col.key}>{value}</td>;
+                    } else {
+                      return <td key={col.key}>{properties[col.key]}</td>;
+                    }
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+  </script>
+
+  <!-- Leaflet and Bootstrap Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
+
+  <!-- Custom JS -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

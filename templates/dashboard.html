@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Location Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .dashboard-section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            margin-top: 0;
+            color: #444;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 5px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        .stat-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .alert {
+            padding: 15px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+        }
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        .refresh-button {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            float: right;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        .refresh-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cone Scouting Tool - User Location Dashboard</h1>
+        <a href="/dashboard" class="refresh-button">Refresh Data</a>
+        
+        {% if not locations %}
+        <div class="alert">
+            No user location data available yet. This dashboard will populate as users access the application.
+        </div>
+        {% endif %}
+        
+        <div class="dashboard-section">
+            <h2 class="section-title">User Locations</h2>
+            <div id="map"></div>
+        </div>
+        
+        <div class="dashboard-section">
+            <h2 class="section-title">Access Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Total Unique Visitors</div>
+                    <div class="stat-value">{{ total_visitors }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Today's Visitors</div>
+                    <div class="stat-value">{{ today_visitors }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Visitors with Location Data</div>
+                    <div class="stat-value">{{ locations|length }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Last Updated</div>
+                    <div class="stat-value" id="last-updated"></div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <canvas id="visitorsChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="dashboard-section">
+            <h2 class="section-title">Popular Endpoints</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Visit Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for endpoint, count in popular_endpoints %}
+                    <tr>
+                        <td>{{ endpoint }}</td>
+                        <td>{{ count }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2">No endpoint data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if locations %}
+        <div class="dashboard-section">
+            <h2 class="section-title">Visitor Details</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>IP</th>
+                        <th>Location</th>
+                        <th>First Visit</th>
+                        <th>Last Visit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for visitor in locations %}
+                    <tr>
+                        <td>{{ visitor.ip }}</td>
+                        <td>
+                            {% if visitor.city != "Unknown" %}
+                                {{ visitor.city }}, 
+                            {% endif %}
+                            {% if visitor.region != "Unknown" %}
+                                {{ visitor.region }}, 
+                            {% endif %}
+                            {% if visitor.country != "Unknown" %}
+                                {{ visitor.country }}
+                            {% else %}
+                                ({{ visitor.lat }}, {{ visitor.lng }})
+                            {% endif %}
+                        </td>
+                        <td>{{ visitor.first_visit }}</td>
+                        <td>{{ visitor.last_visit }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([20, 0], 2);
+        
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Add markers for each user location
+        const locations = {{ locations|tojson }};
+        const markers = [];
+        
+        if (locations.length > 0) {
+            locations.forEach(location => {
+                let popupContent = `<b>IP:</b> ${location.ip}`;
+                
+                if (location.country !== "Unknown") {
+                    popupContent += `<br><b>Location:</b> `;
+                    if (location.city !== "Unknown") popupContent += `${location.city}, `;
+                    if (location.region !== "Unknown") popupContent += `${location.region}, `;
+                    popupContent += location.country;
+                }
+                
+                if (location.last_visit) {
+                    popupContent += `<br><b>Last Visit:</b> ${location.last_visit}`;
+                }
+                
+                const marker = L.marker([location.lat, location.lng])
+                    .addTo(map)
+                    .bindPopup(popupContent);
+                markers.push(marker);
+            });
+            
+            // Create a bounds object and fit the map to those bounds
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+        
+        // Set the last updated time
+        document.getElementById('last-updated').textContent = new Date().toLocaleString();
+        
+        // Create visitor trend chart
+        const dailyVisitorData = {{ daily_visitors|tojson }};
+        const ctx = document.getElementById('visitorsChart').getContext('2d');
+        
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dailyVisitorData.days || [],
+                datasets: [{
+                    label: 'Unique Visitors',
+                    data: dailyVisitorData.counts || [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Visitors'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Day'
+                        }
+                    }
+                },
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Visitor Trends (Last 7 Days)'
+                    },
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

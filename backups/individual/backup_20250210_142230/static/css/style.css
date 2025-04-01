@@ -1,0 +1,183 @@
+/* ==========================================
+   General Reset & Base Styles
+   ========================================== */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Arial', sans-serif;
+}
+
+/* ==========================================
+   Header & Navigation
+   ========================================== */
+header {
+    text-align: center;
+    padding: 10px 0;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+header h1 {
+    margin: 0;
+    color: #004d25;
+    font-size: 2rem;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* ==========================================
+   Layout & Container Styles
+   ========================================== */
+.row {
+    display: flex;
+    margin: 0;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    background-color: #f8f9fa;
+    padding: 15px;
+    height: 100vh;
+    border-right: 2px solid #ddd;
+    width: 250px !important;
+    flex: 0 0 250px !important;
+    max-width: 250px !important;
+}
+
+/* Map Container Styles */
+.map-container {
+    flex: 1;
+    height: 100vh;
+    padding: 0;
+    width: calc(100% - 250px) !important;
+    max-width: none !important;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* ==========================================
+   Dropdown & Form Elements
+   ========================================== */
+.sidebar label {
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: #004d25;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.8);
+    display: block;
+}
+
+.form-select {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #004d25;
+    border-radius: 5px;
+    background-color: white;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.form-select:hover {
+    border-color: #006633;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #008040;
+    box-shadow: 0 0 5px rgba(0, 77, 37, 0.3);
+}
+
+/* Dropdown Section Styling */
+.dropdown-header {
+    font-weight: bold;
+    color: #004d25;
+    background-color: #f0f0f0;
+    padding: 4px;
+}
+
+.dropdown-divider {
+    color: #999;
+    background-color: #f8f8f8;
+    text-align: center;
+}
+
+option.dropdown-header {
+    font-size: 0.85em;
+    font-weight: bold;
+    background-color: #f0f0f0;
+}
+
+option.dropdown-divider {
+    border-bottom: 1px solid #ddd;
+}
+
+/* ==========================================
+   Legend & Info Panels
+   ========================================== */
+#legend {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+
+.attribute-section {
+    margin-bottom: 15px;
+}
+
+.section-header {
+    color: #004d25;
+    font-size: 0.9rem;
+    font-weight: bold;
+    padding: 5px 0;
+    margin: 5px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+/* ==========================================
+   Tables
+   ========================================== */
+.mini-attr-table {
+    width: 100%;
+    font-size: 0.85rem;
+    border-collapse: collapse;
+}
+
+.mini-attr-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mini-attr-table td:first-child {
+    width: 60%;
+}
+
+/* ==========================================
+   About Section & Other Pages
+   ========================================== */
+#about-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+/* ==========================================
+   Messages & Alerts
+   ========================================== */
+.error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}

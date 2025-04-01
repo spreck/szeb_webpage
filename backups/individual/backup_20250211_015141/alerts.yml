@@ -1,0 +1,20 @@
+groups:
+  - name: flask_alerts
+    rules:
+      - alert: HighResponseTime
+        expr: endpoint_latency_seconds_bucket{le="1"} / endpoint_latency_seconds_count < 0.9
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "More than 10% of requests are taking longer than 1 second."
+
+      - alert: HighErrorRate
+        expr: increase(endpoint_requests_total{status_code="500"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "More than 5 internal server errors (500) in the last 5 minutes."

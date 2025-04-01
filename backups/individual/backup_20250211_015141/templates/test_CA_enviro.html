@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Map with ArcGIS Layer</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Load Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <!-- Load Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- Load Esri Leaflet from CDN -->
+    <script src="https://unpkg.com/esri-leaflet"></script>
+
+    <style>
+        #map {
+            width: 600px;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([37.7749, -122.4194], 10);
+
+        // Add OpenStreetMap base layer
+        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Create a new ArcGIS Feature Layer
+        var calEnviroScreenResultsLayer = L.esri.featureLayer({
+            url: 'https://services1.arcgis.com/PCHfdHz4GlDNAhBb/ArcGIS/rest/services/CalEnviroScreen_4_0_Results_/FeatureServer/0',
+            useCors: true
+        });
+
+        // Define baseLayers and overlayLayers for the layer control
+        var baseLayers = {
+            "OpenStreetMap": osmLayer
+        };
+        var overlayLayers = {
+            "CalEnviroScreen 4.0 Results": calEnviroScreenResultsLayer
+        };
+
+        // Add the layer control to the map
+        L.control.layers(baseLayers, overlayLayers).addTo(map);
+    </script>
+</body>
+</html>

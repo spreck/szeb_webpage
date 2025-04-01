@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interpolated Property Visualization</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 80vh; width: 100%; }
+        #propertySelector { position: absolute; top: 20px; left: 20px; z-index: 1000; background: white; padding: 10px; }
+    </style>
+</head>
+<body>
+
+<select id="propertySelector"></select>
+<div id="map"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const map = L.map('map').setView([34.5828, -117.4092], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const propertySelector = document.getElementById('propertySelector');
+        const wmsBaseEPUrl = 'http://localhost:8080/geoserver/EvacuationProjects/ows';
+        const geojsonLayerUrl = `${wmsBaseEPUrl}?service=WFS&version=1.0.0&request=GetFeature&typeName=EvacuationProjects:Adelanto_all_data&outputFormat=application/json`;
+
+        fetch(geojsonLayerUrl)
+            .then(response => response.json())
+            .then(data => {
+                initializePropertySelector(data.features[0].properties);
+                propertySelector.onchange = () => updateMapVisualization(data);
+                updateMapVisualization(data); // Initially update the map visualization
+            })
+            .catch(error => console.error('Error fetching GeoJSON:', error));
+
+        function initializePropertySelector(properties) {
+            for (const prop in properties) {
+                if (properties.hasOwnProperty(prop)) {
+                    const option = document.createElement('option');
+                    option.value = prop;
+                    option.innerHTML = prop;
+                    propertySelector.appendChild(option);
+                }
+            }
+        }
+
+        function updateMapVisualization(data) {
+            const selectedProperty = propertySelector.value;
+            const points = turf.featureCollection(data.features.map(feature => {
+                const value = feature.properties[selectedProperty];
+                return turf.point([feature.geometry.coordinates[0], feature.geometry.coordinates[1]], {value: value});
+            }));
+
+            const bbox = turf.bbox(points);
+            const cellSide = .5; // Adjust this value as needed
+            const hexGrid = turf.hexGrid(bbox, cellSide, {units: 'kilometers'});
+
+            let maxValue = 0; // Initialize max value for color scaling
+            hexGrid.features.forEach(hex => {
+                const pointsWithin = turf.pointsWithinPolygon(points, hex);
+                let totalValue = 0;
+                pointsWithin.features.forEach(point => {
+                    totalValue += point.properties.value;
+                });
+                const avgValue = pointsWithin.features.length > 0 ? totalValue / pointsWithin.features.length : 0;
+                hex.properties.avgValue = avgValue;
+                if (avgValue > maxValue) maxValue = avgValue; // Update max value if necessary
+            });
+
+            // Clear existing layers
+            map.eachLayer(layer => {
+                if (!!layer.toGeoJSON) map.removeLayer(layer);
+            });
+
+            // Add the hex grid layer
+            L.geoJSON(hexGrid, {
+                style: feature => ({
+                    fillColor: getColorForValue(feature.properties.avgValue, maxValue),
+                    weight: 0.5,
+                    color: '#000',
+                    fillOpacity: 0.6
+                })
+            }).addTo(map);
+        }
+
+        function getColorForValue(value, maxValue) {
+            // Example color scaling: scale from green (low) to red (high)
+            const hue = (1 - (value / maxValue)) * 120;
+            return `hsl(${hue}, 100%, 50%)`;
+        }
+    });
+	
+	
+	document.addEventListener('DOMContentLoaded', function() {
+    const map = L.map('map').setView([34.5828, -117.4092], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const propertySelector = document.getElementById('propertySelector');
+    const wmsBaseEPUrl = 'http://localhost:8080/geoserver/EvacuationProjects/ows';
+    const geojsonLayerUrl = `${wmsBaseEPUrl}?service=WFS&version=1.0.0&request=GetFeature&typeName=EvacuationProjects:Adelanto_all_data&outputFormat=application/json`;
+
+    fetch(geojsonLayerUrl)
+        .then(response => response.json())
+        .then(data => {
+            initializePropertySelector(data.features[0].properties);
+            propertySelector.onchange = () => updateMapVisualization(data);
+            updateMapVisualization(data); // Initially update the map visualization
+        })
+        .catch(error => console.error('Error fetching GeoJSON:', error));
+
+    function initializePropertySelector(properties) {
+        for (const prop in properties) {
+            if (properties.hasOwnProperty(prop)) {
+                const option = document.createElement('option');
+                option.value = prop;
+                option.innerHTML = prop;
+                propertySelector.appendChild(option);
+            }
+        }
+    }
+
+    function updateMapVisualization(data) {
+        const selectedProperty = propertySelector.value;
+        const points = turf.featureCollection(data.features.map(feature => {
+            const value = feature.properties[selectedProperty];
+            return turf.point([feature.geometry.coordinates[0], feature.geometry.coordinates[1]], {value: value});
+        }));
+
+        // Calculate the convex hull of the points
+        const convexHull = turf.convex(points);
+
+        const bbox = turf.bbox(points);
+        const cellSide = 1; // Adjust this value as needed
+        const hexGrid = turf.hexGrid(bbox, cellSide, {units: 'kilometers'});
+
+        let maxValue = 0; // Initialize max value for color scaling
+        let filteredHexGrid = turf.featureCollection(hexGrid.features.filter(hex => {
+            return turf.intersect(hex, convexHull) !== null;
+        }));
+
+        filteredHexGrid.features.forEach(hex => {
+            const pointsWithin = turf.pointsWithinPolygon(points, hex);
+            let totalValue = 0;
+            pointsWithin.features.forEach(point => {
+                totalValue += point.properties.value;
+            });
+            const avgValue = pointsWithin.features.length > 0 ? totalValue / pointsWithin.features.length : 0;
+            hex.properties.avgValue = avgValue;
+            if (avgValue > maxValue) maxValue = avgValue; // Update max value if necessary
+        });
+
+        // Clear existing layers
+        map.eachLayer(layer => {
+            if (!!layer.toGeoJSON) map.removeLayer(layer);
+        });
+
+        // Add the filtered hex grid layer
+        L.geoJSON(filteredHexGrid, {
+            style: feature => ({
+                fillColor: getColorForValue(feature.properties.avgValue, maxValue),
+                weight: 0.5,
+                color: '#000',
+                fillOpacity: 0.6
+            })
+        }).addTo(map);
+
+        // Optionally, add the convex hull to the map as well
+        L.geoJSON(convexHull, {
+            style: {
+                color: '#ff7800',
+                weight: 2,
+                opacity: 0.65
+            }
+        }).addTo(map);
+    }
+
+    function getColorForValue(value, maxValue) {
+        // Example color scaling: scale from green (low) to red (high)
+        const hue = (1 - (value / maxValue)) * 120;
+        return `hsl(${hue}, 100%, 50%)`;
+    }
+});
+
+</script>
+
+</body>
+</html>
