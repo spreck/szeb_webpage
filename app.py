@@ -57,14 +57,16 @@ def create_app(test_dir=None):
     user_locations = Counter('unique_user_locations', 'Unique user locations', ['latitude', 'longitude'])
     error_counter = Counter('endpoint_errors', 'Total errors per endpoint and status code', ['endpoint', 'status_code'])
     
-    # Add emergency login route
-    @app.route('/emergency_login')
-    def emergency_login():
-        session['admin_logged_in'] = True
-        return redirect('/admin')
-    
     # Register routes
     setup_routes(app)
+    
+    # Register the enhanced SLD routes
+    from api.enhanced_sld_routes import register_routes as register_enhanced_sld_routes
+    register_enhanced_sld_routes(app)
+    
+    # Register the SZEB raster routes
+    from api.szeb_raster_routes import register_routes as register_szeb_raster_routes
+    register_szeb_raster_routes(app)
     
     return app
 

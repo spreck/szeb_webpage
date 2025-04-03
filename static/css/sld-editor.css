@@ -1,0 +1,149 @@
+/**
+ * SLD Editor Styles
+ * 
+ * Custom styling for the SLD Editor integration
+ */
+
+.sld-editor-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.template-preview {
+  padding: 15px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.template-preview svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.style-option {
+  display: flex;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.style-option:hover {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+}
+
+.style-option.selected {
+  background-color: #e6f2ff;
+  border-color: #3388ff;
+}
+
+.style-option-preview {
+  width: 60px;
+  height: 60px;
+  margin-right: 15px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.style-option-details {
+  flex: 1;
+}
+
+.style-option-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.style-option-description {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.color-swatch.selected {
+  border: 2px solid #000;
+}
+
+/* Color ramp previews */
+.color-ramp-preview {
+  height: 20px;
+  width: 100%;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.color-ramp-Blues {
+  background: linear-gradient(to right, #f7fbff, #deebf7, #c6dbef, #9ecae1, #6baed6, #4292c6, #2171b5, #084594);
+}
+
+.color-ramp-Greens {
+  background: linear-gradient(to right, #f7fcf5, #e5f5e0, #c7e9c0, #a1d99b, #74c476, #41ab5d, #238b45, #005a32);
+}
+
+.color-ramp-Reds {
+  background: linear-gradient(to right, #fff5f0, #fee0d2, #fcbba1, #fc9272, #fb6a4a, #ef3b2c, #cb181d, #99000d);
+}
+
+.color-ramp-YlOrRd {
+  background: linear-gradient(to right, #ffffcc, #ffeda0, #fed976, #feb24c, #fd8d3c, #fc4e2a, #e31a1c, #b10026);
+}
+
+.color-ramp-Spectral {
+  background: linear-gradient(to right, #9e0142, #d53e4f, #f46d43, #fdae61, #fee08b, #e6f598, #abdda4, #66c2a5, #3288bd, #5e4fa2);
+}
+
+.color-ramp-BuGn {
+  background: linear-gradient(to right, #f7fcfd, #e5f5f9, #ccece6, #99d8c9, #66c2a4, #41ae76, #238b45, #005824);
+}
+
+.color-ramp-PuRd {
+  background: linear-gradient(to right, #f7f4f9, #e7e1ef, #d4b9da, #c994c7, #df65b0, #e7298a, #ce1256, #91003f);
+}
+
+.color-ramp-Viridis {
+  background: linear-gradient(to right, #440154, #482777, #3f4a8a, #31688e, #26828e, #1f9d8a, #6cce5a, #fde725);
+}
+
+/* SLD Editor tab styling */
+.tab-content > .tab-pane {
+  padding: 15px 0;
+}
+
+.form-label {
+  font-weight: 600;
+}
+
+.action-buttons {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}

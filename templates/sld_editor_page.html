@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="geoserver-url" content="{{ geoserver_url }}">
+  <meta name="geoserver-workspace" content="{{ geoserver_workspace }}">
+  <title>Layer Symbolization - SLD Editor</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sld-editor.css') }}">
+  <style>
+    .admin-header {
+      background-color: #004d25;
+      color: white;
+      padding: 15px 0;
+      margin-bottom: 30px;
+    }
+    .btn-back {
+      margin-right: 15px;
+    }
+    .sld-editor-container {
+      height: calc(100vh - 200px);
+      min-height: 500px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .layer-info {
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+    .action-buttons {
+      margin-top: 20px;
+    }
+    .tab-content {
+      padding-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header class="admin-header">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1>Layer Symbolization - SLD Editor</h1>
+        <div>
+          <a href="/admin" class="btn btn-outline-light me-2">Back to Admin</a>
+          <a href="/" class="btn btn-outline-light me-2">Back to Application</a>
+          <a href="/admin/logout" class="btn btn-danger">Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="layer-info">
+          <h4>Layer Information</h4>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Layer Name:</strong> <span id="layerName">{{ layer_name }}</span></p>
+              <p><strong>Workspace:</strong> <span id="workspace">{{ workspace }}</span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Feature Type:</strong> <span id="featureType">{{ feature_type }}</span></p>
+              <p><strong>Attributes:</strong> <span id="attributes">{{ attributes|join(', ') }}</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <ul class="nav nav-tabs" id="editorTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="template-tab" data-bs-toggle="tab" data-bs-target="#template" type="button" role="tab" aria-controls="template" aria-selected="true">From Template</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="existing-tab" data-bs-toggle="tab" data-bs-target="#existing" type="button" role="tab" aria-controls="existing" aria-selected="false">From Existing Layer</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom" type="button" role="tab" aria-controls="custom" aria-selected="false">Custom Style</button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="editorTabsContent">
+          <!-- Template-based styling tab -->
+          <div class="tab-pane fade show active" id="template" role="tabpanel" aria-labelledby="template-tab">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="templateSelect" class="form-label">Select a template</label>
+                  <select class="form-select" id="templateSelect">
+                    <option value="">-- Select a template --</option>
+                    <option value="simple">Simple (Single Symbol)</option>
+                    <option value="categorical">Categorical (Unique Values)</option>
+                    <option value="graduated">Graduated (Range)</option>
+                    <option value="heat">Heat Map</option>
+                    <option value="choropleth">Choropleth</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="attributeSelect" class="form-label">Classification Attribute (for Categorical/Graduated)</label>
+                  <select class="form-select" id="attributeSelect">
+                    <option value="">-- Select an attribute --</option>
+                    {% for attr in attributes %}
+                    <option value="{{ attr }}">{{ attr }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="colorRamp" class="form-label">Color Scheme</label>
+                  <select class="form-select" id="colorRamp">
+                    <option value="Blues">Blues</option>
+                    <option value="Greens">Greens</option>
+                    <option value="Reds">Reds</option>
+                    <option value="YlOrRd">Yellow-Orange-Red</option>
+                    <option value="Spectral">Spectral</option>
+                    <option value="BuGn">Blue-Green</option>
+                    <option value="PuRd">Purple-Red</option>
+                    <option value="Viridis">Viridis</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="classes" class="form-label">Number of Classes (for Graduated)</label>
+                  <input type="number" class="form-control" id="classes" min="2" max="10" value="5">
+                </div>
+                <div class="mb-3">
+                  <button class="btn btn-primary" id="generateTemplateStyle">Generate Style</button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header">Preview</div>
+                  <div class="card-body">
+                    <div id="stylePreview" class="p-3 text-center">
+                      <p class="text-muted">Select a template to see preview</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Existing layer tab -->
+          <div class="tab-pane fade" id="existing" role="tabpanel" aria-labelledby="existing-tab">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="existingLayerSelect" class="form-label">Choose an existing layer</label>
+                  <select class="form-select" id="existingLayerSelect">
+                    <option value="">-- Select a layer --</option>
+                    <!-- Will be populated dynamically -->
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <button class="btn btn-primary" id="loadExistingStyle">Load Style</button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header">Preview</div>
+                  <div class="card-body">
+                    <div id="existingStylePreview" class="p-3 text-center">
+                      <p class="text-muted">Select a layer to see preview</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom SLD Editor tab -->
+          <div class="tab-pane fade" id="custom" role="tabpanel" aria-labelledby="custom-tab">
+            <div class="sld-editor-container" id="sldEditorContainer">
+              <!-- The SLD Editor will be mounted here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="action-buttons d-flex justify-content-between">
+          <button class="btn btn-secondary" id="cancelButton">Cancel</button>
+          <div>
+            <button class="btn btn-outline-primary me-2" id="previewButton">Preview on Map</button>
+            <button class="btn btn-success" id="saveButton">Save Style</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-12">
+        <div id="statusMessages"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- SLD Editor Scripts (loaded from local src) -->
+  <script src="{{ url_for('static', filename='js/admin/sld-editor-bundle.js') }}"></script>
+  
+  <!-- Integration Script -->
+  <script src="{{ url_for('static', filename='js/admin/sld-editor-integration.js') }}"></script>
+</body>
+</html>
