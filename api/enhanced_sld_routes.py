@@ -2,12 +2,35 @@ import logging
 import traceback
 import json
 import requests
+from functools import wraps
 from flask import Blueprint, jsonify, request, current_app, render_template
-from routes import handle_error, admin_auth_required
+from auth import admin_auth_required
 from api.sld_templates import get_style_template_by_id, get_szeb_template_list, get_basic_template_list
 
 # Setup logger
 logger = logging.getLogger(__name__)
+
+# Generic error handler for API endpoints
+def handle_error(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            # Log the error with traceback
+            error_type = type(e).__name__
+            logger.error(f"Error in {func.__name__}: {str(e)}\n{traceback.format_exc()}")
+            
+            # Return error response for API endpoints
+            status_code = 500
+            if hasattr(e, 'status_code'):
+                status_code = e.status_code
+            return jsonify({
+                'status': 'error',
+                'message': str(e),
+                'error_type': error_type
+            }), status_code
+    return wrapper
 
 # Create Blueprint
 enhanced_sld_bp = Blueprint('enhanced_sld_api', __name__, url_prefix='/api/enhanced_sld')

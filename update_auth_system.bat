@@ -1,29 +1,30 @@
 @echo off
-echo Updating to the new authentication system...
+REM Update authentication system script for Windows
 
-echo Creating data directory for SQLite database...
-mkdir data 2>nul
+echo Updating authentication system...
 
-echo Copying new files...
-copy app_updated_auth.py app.py
-copy requirements_updated.txt requirements.txt
-copy Dockerfile-updated Dockerfile
-copy docker-compose-updated.yml docker-compose.yml
+REM Backup current files
+echo Creating backups...
+copy app.py app.py.bak
+copy models.py models.py.bak
+copy docker-compose.yml docker-compose.yml.bak
 
-echo Stopping existing containers...
-docker-compose down
+REM Update the application files
+echo Updating application files...
+copy app_updated_oauth.py app.py
 
-echo Building and starting containers with new authentication system...
-docker-compose up -d --build
+REM Run database migrations if needed
+echo Checking if database migrations are needed...
+docker compose exec cone-app flask db migrate -m "Add OAuth fields to User model"
+docker compose exec cone-app flask db upgrade
 
-echo Update complete!
-echo.
-echo Default admin credentials:
-echo Username: admin
-echo Password: conescout
-echo.
-echo Please change this password after your first login.
-echo.
-echo Access the application at: http://localhost
-echo.
-pause
+REM Create admin directory if it doesn't exist
+if not exist "templates\admin" mkdir templates\admin
+
+REM Restart the application
+echo Restarting the application...
+docker compose restart cone-app
+
+echo Authentication system updated successfully!
+echo Please visit https://conescout.duckdns.org/auth/login to test the new login system.
+echo Admin dashboard is available at https://conescout.duckdns.org/admin/

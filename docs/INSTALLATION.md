@@ -185,6 +185,47 @@ The application can be configured through the following methods:
 1. Environment variables (set in docker-compose.yml)
 2. Configuration settings in app.py
 
+### Authentication Configuration
+
+The application uses Flask-Security-Too for secure authentication and user management.
+
+#### Default Admin User
+
+Upon first startup, the system automatically creates an admin user with these credentials:
+
+- **Email**: admin@conescout.local
+- **Username**: admin
+- **Password**: conescout
+
+**Important**: Change these credentials in production environments!
+
+#### Customizing Default Admin
+
+You can customize the default admin credentials through environment variables:
+
+```yaml
+services:
+  cone-app:
+    environment:
+      - ADMIN_EMAIL=your_email@example.com
+      - ADMIN_USERNAME=your_username
+      - ADMIN_PASSWORD=your_strong_password
+```
+
+#### Security Settings
+
+Security configuration can be customized through environment variables:
+
+```yaml
+services:
+  cone-app:
+    environment:
+      - SECRET_KEY=your_random_secret_key  # Should be at least 32 characters
+      - SECURITY_PASSWORD_SALT=your_password_salt  # Should be unique and secret
+```
+
+For more details, see the [Authentication System](authentication.md) documentation.
+
 ## Updating JavaScript Files
 
 When you modify JavaScript files in the `static/js` directory, you need to rebuild them:

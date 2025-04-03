@@ -1,3 +1,8 @@
+from flask import render_template, current_app, send_from_directory, request, jsonify, session, Response, abort, redirect, url_for, flash
+from prometheus_client import generate_latest, Counter
+from flask_security import login_required, roles_required, current_user
+from auth import admin_auth_required
+from api.species_routes import register_routes as register_species_routes
 import os
 import requests
 import uuid
@@ -10,11 +15,162 @@ import subprocess  # For running ogr2ogr
 import logging
 import traceback
 from functools import wraps
-from flask import render_template, current_app, send_from_directory, request, jsonify, session, Response, abort, redirect, url_for, flash
-from prometheus_client import generate_latest, Counter
-from api.species_routes import register_routes as register_species_routes
-from routes_auth import setup_auth_routes, admin_auth_required
-from auth import ADMIN_USERNAME, ADMIN_PASSWORD_HASH, verify_password
+
+# --------------------------
+# User Management Routes
+# --------------------------
+@admin_auth_required
+def user_management():
+    """
+    Render the user management page.
+    """
+    from models import User
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
+
+@admin_auth_required
+def get_user(user_id):
+    """
+    Get user details for editing.
+    """
+    from models import User
+    user = User.query.get_or_404(user_id)
+    
+    # Convert roles to a list of names
+    role_names = [role.name for role in user.roles]
+    
+    return jsonify({
+        'id': user.id,
+        'email': user.email,
+        'username': user.username,
+        'active': user.active,
+        'roles': role_names
+    })
+
+@admin_auth_required
+def add_user():
+    """
+    Add a new user.
+    """
+    from models import User, Role, db
+    from flask_security import hash_password
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        roles = request.form.getlist('roles')
+        active = bool(request.form.get('active'))
+        
+        # Check if user already exists
+        existing_user = User.query.filter((User.email == email) | (User.username == username)).first()
+        if existing_user:
+            flash('User with that email or username already exists', 'danger')
+            return redirect(url_for('user_management'))
+        
+        # Create new user
+        new_user = User(
+            email=email,
+            username=username,
+            password=hash_password(password),
+            active=active
+        )
+        
+        # Add roles
+        if 'admin' in roles:
+            admin_role = Role.query.filter_by(name='admin').first()
+            if admin_role:
+                new_user.roles.append(admin_role)
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash('User added successfully', 'success')
+        return redirect(url_for('user_management'))
+        
+    return redirect(url_for('user_management'))
+
+@admin_auth_required
+def edit_user():
+    """
+    Edit an existing user.
+    """
+    from models import User, Role, db
+    from flask_security import hash_password
+    
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        email = request.form.get('email')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        roles = request.form.getlist('roles')
+        active = bool(request.form.get('active'))
+        
+        # Get the user to edit
+        user = User.query.get_or_404(user_id)
+        
+        # Check if email or username is already taken by another user
+        email_user = User.query.filter(User.email == email, User.id != user_id).first()
+        username_user = User.query.filter(User.username == username, User.id != user_id).first()
+        
+        if email_user or username_user:
+            flash('Email or username already taken', 'danger')
+            return redirect(url_for('user_management'))
+        
+        # Update user fields
+        user.email = email
+        user.username = username
+        user.active = active
+        
+        if password:  # Only update password if a new one is provided
+            user.password = hash_password(password)
+        
+        # Update roles
+        admin_role = Role.query.filter_by(name='admin').first()
+        if admin_role in user.roles and 'admin' not in roles:
+            user.roles.remove(admin_role)
+        elif admin_role not in user.roles and 'admin' in roles:
+            user.roles.append(admin_role)
+        
+        db.session.commit()
+        flash('User updated successfully', 'success')
+        
+    return redirect(url_for('user_management'))
+
+@admin_auth_required
+def toggle_user_status(user_id):
+    """
+    Activate or deactivate a user.
+    """
+    from models import User, db
+    
+    user = User.query.get_or_404(user_id)
+    user.active = not user.active
+    db.session.commit()
+    
+    status = 'activated' if user.active else 'deactivated'
+    flash(f'User {user.username} has been {status}', 'success')
+    
+    return redirect(url_for('user_management'))
+
+@admin_auth_required
+def delete_user(user_id):
+    """
+    Delete a user.
+    """
+    from models import User, db
+    from flask_security import current_user
+    
+    if int(user_id) == current_user.id:
+        flash('You cannot delete your own account', 'danger')
+        return redirect(url_for('user_management'))
+    
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    
+    flash(f'User {user.username} has been deleted', 'success')
+    return redirect(url_for('user_management'))
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -98,19 +254,19 @@ def icons(filename):
 
 def track_species():
     data = request.get_json()
-    return "Species tracked", 200
+    return jsonify({"status": "success", "message": "Species tracked"}), 200
 
 def track_attribute():
     data = request.get_json()
-    return "Attribute tracked", 200
+    return jsonify({"status": "success", "message": "Attribute tracked"}), 200
 
 def track_species_duration():
     data = request.get_json()
-    return "Species duration tracked", 200
+    return jsonify({"status": "success", "message": "Species duration tracked"}), 200
 
 def track_attribute_duration():
     data = request.get_json()
-    return "Attribute duration tracked", 200
+    return jsonify({"status": "success", "message": "Attribute duration tracked"}), 200
 
 def get_client_ip():
     return request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()
@@ -507,6 +663,7 @@ def admin_page():
     geoserver_workspace = current_app.config.get("GEOSERVER_WORKSPACE", "SZEB_sample")
     return render_template('admin.html', geoserver_url=geoserver_url, geoserver_workspace=geoserver_workspace)
 
+@admin_auth_required
 def add_layer_page():
     """
     Render the separate page for adding a new layer.
@@ -741,6 +898,7 @@ def generate_style():
 # Setup Routes
 # -------------------------------
 # Simple login test route that bypasses CSRF
+# CSRF exemption is handled in app.py using csrf.exempt('login_test')
 def login_test():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -772,12 +930,19 @@ def login_test():
 
 # Direct login bypass for troubleshooting
 def direct_login():
+    """
+    Direct login bypass for development and debugging purposes only.
+    WARNING: This bypasses all authentication and should be disabled in production.
+    """
+    # Removed environment check to allow temporary access in any mode
     # No authentication here, just set the session directly
     session['admin_logged_in'] = True
     session.modified = True
     return redirect(url_for('admin_page'))
 
 def setup_routes(app):
+    """Register all routes with the Flask app."""
+    # Main routes
     app.add_url_rule('/', 'index', index)
     app.add_url_rule('/about_content', 'about_content', about_content)
     app.add_url_rule('/map_content', 'map_content', map_content)
@@ -799,29 +964,28 @@ def setup_routes(app):
     app.add_url_rule('/has_roi', 'has_roi', has_roi, methods=["GET"])
     app.add_url_rule('/download_map_view', 'download_map_view', download_map_view, methods=["GET"])
     app.add_url_rule('/dashboard', 'location_dashboard', location_dashboard)
-    # Admin page
+    
+    # Admin pages requiring authentication
     app.add_url_rule('/admin', 'admin_page', admin_page)
-    
-    # Login test route
-    app.add_url_rule('/login_test', 'login_test', login_test, methods=["GET", "POST"])
-    
-    # Direct login bypass
-    app.add_url_rule('/direct_login', 'direct_login', direct_login)
-    
-    # Register auth routes (login, logout, change_password)
-    setup_auth_routes(app)
-    
-    # Layer management endpoints
     app.add_url_rule('/addlayer', 'addlayer', add_layer_page)
     app.add_url_rule('/upload_raster', 'upload_raster_page', upload_raster_page)
     app.add_url_rule('/upload_szeb', 'upload_szeb_page', upload_szeb_page)
     app.add_url_rule('/import_featureserver', 'import_featureserver', import_featureserver, methods=["POST"])
     
-    # SLD Editor endpoints
-    app.add_url_rule('/sld_editor', 'sld_editor_page', sld_editor_page)
-    app.add_url_rule('/api/styles', 'get_layer_styles', get_layer_styles, methods=["GET"])
-    app.add_url_rule('/api/styles/sld', 'get_style_sld', get_style_sld, methods=["GET"])
-    app.add_url_rule('/api/styles/create_or_update', 'create_or_update_style', create_or_update_style, methods=["POST"])
+    # User Management Routes
+    app.add_url_rule('/admin/users', 'user_management', user_management)
+    app.add_url_rule('/admin/users/add', 'add_user', add_user, methods=["POST"])
+    app.add_url_rule('/admin/users/edit', 'edit_user', edit_user, methods=["POST"])
+    app.add_url_rule('/admin/users/<int:user_id>', 'get_user', get_user)
+    app.add_url_rule('/admin/users/<int:user_id>/toggle', 'toggle_user_status', toggle_user_status)
+    app.add_url_rule('/admin/users/<int:user_id>/delete', 'delete_user', delete_user)
+    
+    # Authentication routes
+    from routes_auth import setup_auth_routes
+    setup_auth_routes(app)
+    
+    # For convenience during development/debugging
+    app.add_url_rule('/direct_login', 'direct_login', direct_login)
     
     # Register API routes
     register_species_routes(app)
@@ -829,6 +993,11 @@ def setup_routes(app):
     # Register Raster API routes
     from api.raster_routes import register_routes as register_raster_routes
     register_raster_routes(app)
-    return
+    
+    # Register the enhanced SLD routes
+    from api.enhanced_sld_routes import register_routes as register_enhanced_sld_routes
+    register_enhanced_sld_routes(app)
+    
+    return app
 
 # End of routes.py

@@ -8,6 +8,7 @@ from flask_session import Session
 from flask_security import Security, SQLAlchemyUserDatastore, hash_password
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
+from flask_migrate import Migrate
 from prometheus_client import Counter, Histogram
 from sqlalchemy import exc as sqlalchemy_exc
 from dotenv import load_dotenv
@@ -124,6 +125,9 @@ def create_app(test_dir=None):
     
     # Initialize extensions
     db.init_app(app)
+    
+    # Initialize Flask-Migrate
+    migrate = Migrate(app, db)
     
     # Initialize CSRF protection
     csrf = CSRFProtect(app)

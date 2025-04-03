@@ -26,4 +26,15 @@ ENV/
 # Compiled JS 
 static/dist/ 
 # Other 
-.DS_Store 
+.DS_Store
+
+# Archive directory with old files
+archive/
+
+# Sensitive credentials
+client_secret*.json
+
+# Certificate files
+certbot/conf/
+certbot/www/
+

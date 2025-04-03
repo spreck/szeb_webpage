@@ -74,7 +74,7 @@ class MapManager {
     // Connection error handler
     this.geoserver.addEventListener('connectionError', (error) => {
       console.error("GeoServer connection error:", error);
-      this.showError(`Unable to connect to GeoServer. Please try again later. (${error.message})`);
+      // Only log errors, don't show to users
     });
     
     // Connection restored handler

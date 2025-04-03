@@ -1,3 +1,4 @@
+
 services:
   cone-app:
     build:
@@ -7,16 +8,24 @@ services:
       - nginx-network
     environment:
       - FLASK_ENV=development
-      - GEOSERVER_URL=http://conescout.duckdns.org/geoserver
+      - GEOSERVER_URL=https://conescout.duckdns.org/geoserver
+      - SECRET_KEY=conescout_secret_key_2023
+      - SECURITY_PASSWORD_SALT=conescout_salt_2023
+      - ADMIN_EMAILS=jpwhitney@ucdavis.edu,jwingnut@gmail.com,admin@conescout.local
+      - SQLALCHEMY_DATABASE_URI=postgresql://geoserver:23vmoWpostgis@postgis:5432/geoserver_db
     volumes:
       - ./templates:/usr/src/app/templates
       - ./static:/usr/src/app/static
-      - ./app.py:/usr/src/app/app.py
+      - ./app_updated_oauth.py:/usr/src/app/app.py
       - ./routes.py:/usr/src/app/routes.py
       - ./routes_auth.py:/usr/src/app/routes_auth.py
       - ./auth.py:/usr/src/app/auth.py
+      - ./auth_routes.py:/usr/src/app/auth_routes.py
+      - ./admin_routes.py:/usr/src/app/admin_routes.py
+      - ./models.py:/usr/src/app/models.py
       - ./utils:/usr/src/app/utils
       - ./api:/usr/src/app/api
+      - ./client_secret_509773047187-ug65ufnta7ikjrtjmct8aks6rgs0in4d.apps.googleusercontent.com.json:/usr/src/app/client_secret_509773047187-ug65ufnta7ikjrtjmct8aks6rgs0in4d.apps.googleusercontent.com.json
     depends_on:
       - postgis
     restart: always
@@ -32,6 +41,7 @@ services:
     image: custom-nginx
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - cone-app
       - geoserver
@@ -40,35 +50,52 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/proxy_params:/etc/nginx/proxy_params:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     restart: always
     mem_limit: 128M
     mem_reservation: 64M
-    
-  # certbot service removed for HTTP-only configuration
-  # certbot:
-  #   image: certbot/certbot
-  #   volumes:
-  #     - ./certbot/conf:/etc/letsencrypt
-  #     - ./certbot/www:/var/www/certbot
-  #   entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait ${!}; done;'"
-  #   depends_on:
-  #     - nginx-container
+
+  certbot-init:
+    image: certbot/certbot
+    profiles:
+      - init
+    depends_on:
+      - nginx-container
+    entrypoint: >
+      certbot certonly --webroot --webroot-path=/var/www/certbot
+      --email conescout.alerts@gmail.com
+      --agree-tos --no-eff-email
+      -d conescout.duckdns.org
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+
+
+  certbot:
+    image: certbot/certbot
+    command: >
+      sh -c "trap exit TERM; while :; do
+        certbot renew --webroot -w /var/www/certbot --quiet &&
+        nginx -s reload;
+        sleep 12h & wait $${!};
+      done"
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - nginx-container
 
   geoserver:
     image: docker.osgeo.org/geoserver:2.26.2
     environment:
-      # Database Configuration
       - POSTGRES_DB=geoserver_db
       - POSTGRES_USER=geoserver
       - POSTGRES_PASSWORD=23vmoWpostgis
       - PGHOST=postgis
       - PGPORT=5432
-      
-      # Core Settings
       - INSTALL_EXTENSIONS=true
       - SKIP_DEMO_DATA=true
-      
-      # GeoWebCache Configuration
       - GEOWEBCACHE_CACHE_DIR=/opt/geoserver_data/gwc
       - GEOWEBCACHE_CONFIG_DIR=/opt/geoserver_data/gwc
       - GEOWEBCACHE_CACHE_MEMORY=256M
@@ -77,25 +104,17 @@ services:
       - GEOWEBCACHE_METASTORE_JDBC_DATABASE=geoserver_db
       - GEOWEBCACHE_METASTORE_JDBC_USER=geoserver
       - GEOWEBCACHE_METASTORE_JDBC_PASSWORD=23vmoWpostgis
-      
-      # Performance Tuning
       - JAVA_OPTS=-Xms256M -Xmx512M -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication
       - CATALINA_OPTS=-Xms256M -Xmx512M
       - GEOSERVER_OPTS=-DGEOSERVER_CSRF_DISABLED=true -Dorg.geotools.referencing.forceXY=true -Dorg.geotools.coverage.jaiext.enabled=true -DMAX_FEATURES=2000
-      
-      # Extensions
       - STABLE_EXTENSIONS=ysld,h2,importer,vectortiles,monitor,css,rat,wps
       - COMMUNITY_EXTENSIONS=
-      
-      # Other Settings
       - ENABLE_JSONP=true
       - MAX_FILTER_RULES=20
       - OPTIMIZE_LINE_WIDTH=false
-
     volumes:
       - geoserver-extensions:/opt/additional_libs
       - P:/Projects/szeb_geoserver_data:/opt/geoserver_data
-      
     networks:
       - nginx-network
     depends_on:

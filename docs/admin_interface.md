@@ -16,10 +16,12 @@ http://[your-server]/admin
 
 The admin interface is protected by authentication. You need to provide:
 
-- **Username**: admin
-- **Default Password**: conescout
+- **Email or Username**: The email address or username of an admin account (default: admin)
+- **Password**: Your secure password (default: conescout)
 
 **Important**: For security reasons, change the default password in production environments.
+
+For detailed information about authentication, user management, and security, please refer to the [Authentication System](authentication.md) documentation.
 
 ## Features
 
@@ -109,60 +111,75 @@ For detailed information on setting up GeoServer layers, see the [Adding Species
 
 The admin interface implements several security measures:
 
-1. **Authentication**: Username and password protection
-2. **Session Management**: Secure session handling
-3. **Password Hashing**: Passwords are stored using BCrypt hashing (industry-standard)
-4. **File Locking**: Prevents race conditions during configuration updates
-5. **Timing Attack Prevention**: Consistent response timing for failed login attempts
+1. **Authentication**: Username/email and password protection
+2. **Role-Based Access Control**: Only users with 'admin' role can access
+3. **Session Management**: Secure session handling with configurable lifetime
+4. **Password Hashing**: Passwords are stored using PBKDF2-SHA512 hashing (more secure than bcrypt)
+5. **CSRF Protection**: Protection against cross-site request forgery attacks
+6. **Timing Attack Prevention**: Consistent response timing for failed login attempts
+
+For a complete overview of security features, see the [Authentication System](authentication.md) documentation.
 
 ## Changing the Admin Password
 
 To change the admin password:
 
 1. Log in to the admin interface
-2. Navigate to `http://[your-server]/admin/change_password`
+2. Click your email/username in the top right (if available) or navigate to `/change_password`
 3. Enter your current password
-4. Enter and confirm your new password (minimum 8 characters)
+4. Enter and confirm your new password
 5. Click "Change Password"
 
-The system will automatically update the password hash and redirect you to the login page.
+The system will securely hash and store your new password.
 
 ## Password Requirements
 
 For security purposes, passwords should:
-- Be at least 8 characters long
-- Contain a mix of letters, numbers, and special characters
+- Be at least 12 characters long (recommended)
+- Contain a mix of uppercase and lowercase letters
+- Include numbers and special characters
 - Not be easily guessable or commonly used passwords
 - Be unique to this application
+
+Strong password examples:
+- "C0n3-Sc0ut!ng-T00l-2023"
+- "Forest$MapAnalysis#472"
+- "Complex*TreeData~95!"
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Authentication Failures**:
-   - Verify you're using the correct username and password
+   - Verify you're using the correct email/username and password
    - Check that cookies are enabled in your browser
+   - Ensure your account is active
    - Clear your browser cache and cookies if you continue to experience issues
 
-2. **Species Not Showing in the Application**:
+2. **"Invalid CSRF Token" Errors**:
+   - This typically happens when your session has expired
+   - Try refreshing the page to get a new CSRF token
+   - Clear browser cookies and try again
+
+3. **Species Not Showing in the Application**:
    - Verify the species is marked as "Enabled"
    - Check that the GeoServer layers exist and are correctly named
    - Verify layer naming conventions match the [Adding Species](adding_species.md) guide
 
-3. **Background Image Not Displaying**:
+4. **Background Image Not Displaying**:
    - Ensure the image path is correct
    - Verify the image file exists in the specified location
    - Check that the file permissions allow web server access
 
-4. **Error Saving Configuration**:
+5. **Error Saving Configuration**:
    - Check the application logs for specific error messages
    - Verify file permissions on the configuration file
    - Ensure the web server has write permissions to the configuration directory
 
-5. **Password Change Failures**:
-   - Ensure you're entering the correct current password
-   - Make sure your new password meets the minimum requirements
-   - Verify that the application has write permissions to the auth.py file
+6. **Session Expires Too Quickly**:
+   - By default, sessions last for 24 hours
+   - This can be adjusted in the application configuration
+   - Check if your browser is configured to clear cookies frequently
 
 ### Getting Help
 

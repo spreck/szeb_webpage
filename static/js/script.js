@@ -59,6 +59,9 @@ async function handleMapClick(e) {
   `;
 
   // Create or update persistent popup
+  // First, close any existing popups to ensure only one is visible at a time
+  mapManager.map.closePopup();
+
   let persistentPopup = L.popup({ maxWidth: 300, autoClose: false, closeOnClick: false })
     .setLatLng(e.latlng)
     .setContent(popupContent)

@@ -76,6 +76,25 @@ For larger deployments or datasets, see [System Requirements](docs/system_requir
 - Cross-platform file locking for concurrent operations
 - Session management and secure cookie handling
 
+## Authentication
+
+The application supports two authentication methods:
+
+- **Standard Login**: Email and password authentication
+- **Google OAuth2**: Single sign-on with Google accounts
+
+Admin users can be configured by adding their email addresses to the `ADMIN_EMAILS` environment variable.
+
+## HTTPS Configuration
+
+Secure HTTPS access is configured using Let's Encrypt certificates:
+
+- Automatic certificate generation and renewal
+- Nginx SSL configuration with modern cipher settings
+- Redirect from HTTP to HTTPS
+
+For detailed setup instructions, see the [HTTPS and OAuth Setup Guide](README-HTTPS-OAUTH-SETUP.md).
+
 ## Development
 
 ### JavaScript Build System
@@ -98,6 +117,7 @@ Admin passwords can be changed through the admin interface (/admin/change_passwo
 - [System Requirements](docs/system_requirements.md)
 - [Advanced Memory Optimization](docs/advanced_memory_optimization.md)
 - [Nginx Configuration](docs/nginx_configuration.md)
+- [HTTPS and OAuth Setup](README-HTTPS-OAUTH-SETUP.md)
 - [Admin Interface](docs/admin_interface.md)
 - [Adding Species](docs/adding_species.md)
 - [Modules](docs/modules.md)

@@ -46,8 +46,7 @@ def admin_auth_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get('admin_logged_in'):
-            # Store the original URL for redirecting back after login
-            session['next_url'] = request.url
+            # Redirect to the login page without storing the current URL
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated

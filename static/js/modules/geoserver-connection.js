@@ -68,16 +68,20 @@ class GeoServerConnection {
       clearInterval(this.healthCheckInterval);
     }
     
-    this.healthCheckInterval = setInterval(() => {
-      this.checkHealth().catch(err => {
-        console.warn('Health check failed:', err);
+    // Initial check with a delay to allow the UI to load first
+    setTimeout(() => {
+      // For health checks, we'll skip the error event to not show popups to users
+      this.checkHealth(true).catch(err => {
+        console.warn('Initial health check failed:', err);
       });
-    }, 60000); // Check every minute
-    
-    // Initial check
-    this.checkHealth().catch(err => {
-      console.warn('Initial health check failed:', err);
-    });
+      
+      // Then set up the interval
+      this.healthCheckInterval = setInterval(() => {
+        this.checkHealth(true).catch(err => {
+          console.warn('Health check failed:', err);
+        });
+      }, 60000); // Check every minute
+    }, 2000); // 2-second initial delay
   }
   
   /**
@@ -92,23 +96,33 @@ class GeoServerConnection {
   
   /**
    * Check GeoServer availability
+   * @param {boolean} silentMode - If true, don't trigger connection error events
    * @returns {Promise<boolean>} Promise resolving to availability status
    */
-  async checkHealth() {
+  async checkHealth(silentMode = false) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      // Generate the URL for the GeoServer version endpoint
+      const url = `${this.config.getUrl()}/rest/about/status`;
       
-      const url = `${this.config.getUrl()}/rest/about/version.json`;
-      const response = await fetch(url, { 
-        method: 'GET',
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
+      // Get credentials for authentication
+      const credentials = this.config.getCredentials();
+      const authHeader = 'Basic ' + btoa(`${credentials.username}:${credentials.password}`);
       
-      clearTimeout(timeoutId);
+      // Make the request with auth headers and timeout
+      const response = await Promise.race([
+        fetch(url, { 
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': authHeader
+          },
+          // Don't send cookies or expose auth to third-party sites
+          credentials: 'omit'
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout')), 5000)
+        )
+      ]);
       
       const wasAvailable = this.isAvailable;
       this.isAvailable = response.ok;
@@ -119,8 +133,8 @@ class GeoServerConnection {
           timestamp: new Date(),
           message: 'GeoServer connection restored'
         });
-      } else if (wasAvailable && !this.isAvailable) {
-        // Connection lost
+      } else if (wasAvailable && !this.isAvailable && !silentMode) {
+        // Connection lost (only trigger event if not in silent mode)
         this.lastError = {
           timestamp: new Date(),
           status: response.status,
@@ -139,7 +153,8 @@ class GeoServerConnection {
         message: error.message || 'Network error while checking GeoServer health'
       };
       
-      if (wasAvailable) {
+      if (wasAvailable && !silentMode) {
+        // Only trigger error event if not in silent mode
         this.triggerEvent('connectionError', this.lastError);
       }
       
@@ -173,7 +188,7 @@ class GeoServerConnection {
       try {
         // Only do health check on retries
         if (attempt > 0 && !this.isAvailable) {
-          await this.checkHealth();
+          await this.checkHealth(true);
           if (!this.isAvailable) {
             throw new Error('GeoServer is currently unavailable');
           }

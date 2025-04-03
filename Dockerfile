@@ -47,7 +47,7 @@ ENV PROJ_LIB=/usr/share/proj
 COPY requirements.txt .
 
 # Install dependencies
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt && pip install flask-session
 
 # Copy application files
 COPY app.py .
@@ -55,6 +55,7 @@ COPY routes.py .
 COPY routes_auth.py .
 COPY css_styles.py .
 COPY auth.py .
+COPY models.py .
 COPY utils/ ./utils/
 COPY api/ ./api/
 

@@ -1,30 +1,30 @@
 #!/bin/bash
 
-echo "Updating to the new authentication system..."
+# Update authentication system script
+echo "Updating authentication system..."
 
-echo "Creating data directory for SQLite database..."
-mkdir -p data
+# Backup current files
+echo "Creating backups..."
+cp -f app.py app.py.bak
+cp -f models.py models.py.bak
+cp -f docker-compose.yml docker-compose.yml.bak
 
-echo "Copying new files..."
-cp app_updated_auth.py app.py
-cp requirements_updated.txt requirements.txt
-cp Dockerfile-updated Dockerfile
-cp docker-compose-updated.yml docker-compose.yml
+# Update the application files
+echo "Updating application files..."
+cp -f app_updated_oauth.py app.py
 
-echo "Stopping existing containers..."
-docker-compose down
+# Run database migrations if needed
+echo "Checking if database migrations are needed..."
+docker compose exec cone-app flask db migrate -m "Add OAuth fields to User model"
+docker compose exec cone-app flask db upgrade
 
-echo "Building and starting containers with new authentication system..."
-docker-compose up -d --build
+# Create admin directory if it doesn't exist
+mkdir -p templates/admin
 
-echo "Update complete!"
-echo ""
-echo "Default admin credentials:"
-echo "Username: admin"
-echo "Password: conescout"
-echo ""
-echo "Please change this password after your first login."
-echo ""
-echo "Access the application at: http://localhost"
-echo ""
-read -p "Press Enter to continue..."
+# Restart the application
+echo "Restarting the application..."
+docker compose restart cone-app
+
+echo "Authentication system updated successfully!"
+echo "Please visit https://conescout.duckdns.org/auth/login to test the new login system."
+echo "Admin dashboard is available at https://conescout.duckdns.org/admin/"

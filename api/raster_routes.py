@@ -5,14 +5,37 @@ import json
 import logging
 import traceback
 import xml.etree.ElementTree as ET
+from functools import wraps
 from flask import Blueprint, jsonify, request, current_app, abort
-from routes import handle_error, admin_auth_required
+from auth import admin_auth_required
 
 # Create Blueprint
 raster_bp = Blueprint('raster_api', __name__, url_prefix='/api')
 
 # Setup logger
 logger = logging.getLogger(__name__)
+
+# Generic error handler for API endpoints
+def handle_error(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            # Log the error with traceback
+            error_type = type(e).__name__
+            logger.error(f"Error in {func.__name__}: {str(e)}\n{traceback.format_exc()}")
+            
+            # Return error response for API endpoints
+            status_code = 500
+            if hasattr(e, 'status_code'):
+                status_code = e.status_code
+            return jsonify({
+                'status': 'error',
+                'message': str(e),
+                'error_type': error_type
+            }), status_code
+    return wrapper
 
 @raster_bp.route('/upload_raster', methods=['POST'])
 @admin_auth_required
