@@ -523,6 +523,15 @@ def upload_raster_page():
     geoserver_workspace = current_app.config.get("GEOSERVER_WORKSPACE", "SZEB_sample")
     return render_template("upload_raster.html", geoserver_url=geoserver_url, geoserver_workspace=geoserver_workspace)
 
+@admin_auth_required
+def upload_szeb_page():
+    """
+    Render the page for uploading SZEB species data.
+    """
+    geoserver_url = current_app.config.get("GEOSERVER_URL", "")
+    geoserver_workspace = current_app.config.get("GEOSERVER_WORKSPACE", "SZEB_sample")
+    return render_template("upload_szeb.html", geoserver_url=geoserver_url, geoserver_workspace=geoserver_workspace)
+
 
 # -------------------------------
 # Visitor Tracking & Other Endpoints (unchanged)
@@ -805,7 +814,14 @@ def setup_routes(app):
     # Layer management endpoints
     app.add_url_rule('/addlayer', 'addlayer', add_layer_page)
     app.add_url_rule('/upload_raster', 'upload_raster_page', upload_raster_page)
+    app.add_url_rule('/upload_szeb', 'upload_szeb_page', upload_szeb_page)
     app.add_url_rule('/import_featureserver', 'import_featureserver', import_featureserver, methods=["POST"])
+    
+    # SLD Editor endpoints
+    app.add_url_rule('/sld_editor', 'sld_editor_page', sld_editor_page)
+    app.add_url_rule('/api/styles', 'get_layer_styles', get_layer_styles, methods=["GET"])
+    app.add_url_rule('/api/styles/sld', 'get_style_sld', get_style_sld, methods=["GET"])
+    app.add_url_rule('/api/styles/create_or_update', 'create_or_update_style', create_or_update_style, methods=["POST"])
     
     # Register API routes
     register_species_routes(app)
