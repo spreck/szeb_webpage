@@ -11,6 +11,20 @@ REM Create a new branch
 echo Creating new branch for HTTPS and OAuth implementation...
 git checkout -b feature/https-oauth-implementation
 
+REM Check for sensitive files
+echo Checking for sensitive files...
+echo.
+echo IMPORTANT: Make sure these sensitive files are NOT committed:
+echo   - client_secret*.json 
+ echo  - .env
+echo   - certbot/conf/
+echo.
+echo Files in the current directory:
+git status
+echo.
+pause
+echo.
+
 REM Add all new and modified files
 echo Adding files to git...
 git add .

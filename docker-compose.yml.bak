@@ -1,3 +1,4 @@
+
 services:
   cone-app:
     build:
@@ -6,16 +7,13 @@ services:
     networks:
       - nginx-network
     environment:
-      - FLASK_ENV=${FLASK_ENV:-development}
-      - GEOSERVER_URL=${GEOSERVER_URL:-https://conescout.duckdns.org/geoserver}
-      - SECRET_KEY=${SECRET_KEY}
-      - SECURITY_PASSWORD_SALT=${SECURITY_PASSWORD_SALT}
-      - ADMIN_EMAILS=${ADMIN_EMAILS}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@conescout.local}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER:-geoserver}:${POSTGRES_PASSWORD}@postgis:5432/${POSTGRES_DB:-geoserver_db}
+      - FLASK_ENV=development
+      - GEOSERVER_URL=https://conescout.duckdns.org/geoserver
+      - SECRET_KEY=conescout_secret_key_2023
+      - SECURITY_PASSWORD_SALT=conescout_salt_2023
+      - ADMIN_EMAILS=jpwhitney@ucdavis.edu,jwingnut@gmail.com,admin@conescout.local
+      - SQLALCHEMY_DATABASE_URI=postgresql://geoserver:23vmoWpostgis@postgis:5432/geoserver_db
     volumes:
-      - ./migrations:/usr/src/app/migrations
       - ./templates:/usr/src/app/templates
       - ./static:/usr/src/app/static
       - ./app_updated_oauth.py:/usr/src/app/app.py
@@ -66,9 +64,9 @@ services:
       - nginx-container
     entrypoint: >
       certbot certonly --webroot --webroot-path=/var/www/certbot
-      --email ${CERTBOT_EMAIL:-conescout.alerts@gmail.com}
+      --email conescout.alerts@gmail.com
       --agree-tos --no-eff-email
-      -d ${DOMAIN_NAME:-conescout.duckdns.org}
+      -d conescout.duckdns.org
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
@@ -91,9 +89,9 @@ services:
   geoserver:
     image: docker.osgeo.org/geoserver:2.26.2
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-geoserver_db}
-      - POSTGRES_USER=${POSTGRES_USER:-geoserver}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=geoserver_db
+      - POSTGRES_USER=geoserver
+      - POSTGRES_PASSWORD=23vmoWpostgis
       - PGHOST=postgis
       - PGPORT=5432
       - INSTALL_EXTENSIONS=true
@@ -103,9 +101,9 @@ services:
       - GEOWEBCACHE_CACHE_MEMORY=256M
       - GEOWEBCACHE_METASTORE_JDBC_HOST=postgis
       - GEOWEBCACHE_METASTORE_JDBC_PORT=5432
-      - GEOWEBCACHE_METASTORE_JDBC_DATABASE=${POSTGRES_DB:-geoserver_db}
-      - GEOWEBCACHE_METASTORE_JDBC_USER=${POSTGRES_USER:-geoserver}
-      - GEOWEBCACHE_METASTORE_JDBC_PASSWORD=${POSTGRES_PASSWORD}
+      - GEOWEBCACHE_METASTORE_JDBC_DATABASE=geoserver_db
+      - GEOWEBCACHE_METASTORE_JDBC_USER=geoserver
+      - GEOWEBCACHE_METASTORE_JDBC_PASSWORD=23vmoWpostgis
       - JAVA_OPTS=-Xms256M -Xmx512M -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication
       - CATALINA_OPTS=-Xms256M -Xmx512M
       - GEOSERVER_OPTS=-DGEOSERVER_CSRF_DISABLED=true -Dorg.geotools.referencing.forceXY=true -Dorg.geotools.coverage.jaiext.enabled=true -DMAX_FEATURES=2000
@@ -117,7 +115,6 @@ services:
     volumes:
       - geoserver-extensions:/opt/additional_libs
       - P:/Projects/szeb_geoserver_data:/opt/geoserver_data
-      - ./fix-database.sql:/opt/geoserver_data/fix-database.sql
     networks:
       - nginx-network
     depends_on:
@@ -139,9 +136,9 @@ services:
       dockerfile: Dockerfile
     container_name: postgis_container
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-geoserver_db}
-      - POSTGRES_USER=${POSTGRES_USER:-geoserver}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=geoserver_db
+      - POSTGRES_USER=geoserver
+      - POSTGRES_PASSWORD=23vmoWpostgis
       - PGDATA=/var/lib/postgresql/data
       - POSTGRES_SHARED_BUFFERS=256MB
       - POSTGRES_EFFECTIVE_CACHE_SIZE=512MB

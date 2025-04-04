@@ -12,10 +12,24 @@ git checkout main
 git checkout -b feature/https-oauth-implementation
 ```
 
-## 2. Stage the changes
+## 2. Make sure sensitive files are not included
+
+Check that these files are NOT staged for commit:
 
 ```bash
-# Add all modified files
+# These should NOT be in the git staging area
+git status
+
+# Make sure these aren't included:
+# - client_secret*.json  (OAuth credentials)
+# - .env                 (Environment variables with passwords)
+# - certbot/conf/        (SSL certificates)
+```
+
+## 3. Stage the changes
+
+```bash
+# Add all modified files except those in .gitignore
 git add .
 
 # If you want to be more specific, you can add files individually
@@ -26,9 +40,11 @@ git add README.md
 git add README-HTTPS-OAUTH-SETUP.md
 git add setup-https-and-oauth.bat
 git add requirements.txt
+git add .env.example
+git add docs/security_credentials.md
 ```
 
-## 3. Commit your changes
+## 4. Commit your changes
 
 ```bash
 git commit -m "Implement HTTPS and OAuth authentication"
@@ -73,7 +89,16 @@ This PR adds HTTPS support using Let's Encrypt certificates and implements OAuth
 - Configured Nginx for SSL termination
 - Added proper SSL configuration
 - Created comprehensive setup documentation
+- Improved security by externalizing credentials
+- Added .env.example template and credentials documentation
 - Cleaned up legacy files and documentation
+
+## Security Improvements
+
+- Added security documentation for credential management
+- Updated .gitignore to exclude sensitive files
+- Created example environment file for safe configuration
+- Removed hardcoded credentials from configuration
 
 ## Testing Done
 

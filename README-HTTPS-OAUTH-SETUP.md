@@ -2,150 +2,134 @@
 
 This document provides detailed instructions for setting up HTTPS and OAuth2 authentication for the Cone Scout application.
 
+## Overview
+
+This setup provides:
+- Secure HTTPS connections using Let's Encrypt certificates
+- Google OAuth2 login integration
+- Traditional username/password authentication
+- Proper proxying for GeoServer through HTTPS
+
 ## Prerequisites
 
 1. Docker and Docker Compose installed
 2. A registered domain with Duck DNS (conescout.duckdns.org)
 3. Google OAuth2 client ID and secret (already set up)
 
-## Setup Steps
+## Implementation Details
 
-### Option 1: Automated Setup
+### Simplified Nginx Configuration
 
-1. Run the automated setup script:
+The key to our implementation is a simplified Nginx configuration that handles:
+- HTTP to HTTPS redirection
+- Let's Encrypt certificate management
+- Proxying requests to the Flask app and GeoServer
 
-```bash
-./setup-https-and-oauth.bat
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile      on;
+
+    # Define upstream for each service
+    upstream cone_app {
+        server cone-app:8000;
+    }
+
+    upstream geoserver {
+        server geoserver:8080;
+    }
+
+    # HTTP server - redirects to HTTPS and handles Let's Encrypt challenges
+    server {
+        listen 80;
+        server_name conescout.duckdns.org;
+        
+        # Allow certbot challenges
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+        
+        # Redirect all HTTP traffic to HTTPS
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # HTTPS server
+    server {
+        listen 443 ssl;
+        server_name conescout.duckdns.org;
+        
+        # SSL certificates
+        ssl_certificate /etc/letsencrypt/live/conescout.duckdns.org/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/conescout.duckdns.org/privkey.pem;
+        
+        # Flask application
+        location / {
+            proxy_pass http://cone_app;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+        }
+        
+        # GeoServer
+        location /geoserver/ {
+            proxy_pass http://geoserver/geoserver/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+        }
+    }
+}
 ```
 
-This script will:
-- Build containers with updated requirements including Flask-Migrate
-- Initialize SSL certificates if needed
-- Start the database first to ensure it's ready
-- Run database migrations to add OAuth columns
-- Start all services in the correct order
+### Authentication Setup
 
-### Option 2: Manual Step-by-Step Setup
+The authentication system includes:
+- Standard login with username/password
+- Google OAuth2 integration using Flask-Dance
+- Admin role-based access control
 
-If you prefer to run the setup manually, follow these steps:
+### Environment-Based Configuration
 
-1. **Install Flask-Migrate**:
+All sensitive settings are stored in a `.env` file (not version controlled):
+- Database credentials
+- Secret keys
+- Admin credentials
+- OAuth settings
 
-```bash
-# Update the requirements.txt
-docker compose build cone-app
-```
+## Maintenance
 
-2. **Generate SSL certificates**:
+### SSL Certificate Renewal
 
-```bash
-# Only run if you don't have certificates yet
-docker compose up certbot-init
-```
+Let's Encrypt certificates are valid for 90 days and auto-renew via the certbot container.
 
-3. **Start the database first**:
+### Troubleshooting
 
-```bash
-docker compose up -d postgis
-# Wait for the database to be ready
-sleep 10
-```
+Common issues and how to fix them:
 
-4. **Start all services**:
+1. **502 Bad Gateway**: 
+   - Restart the containers: `docker compose restart`
+   - Check if GeoServer is running: `docker compose logs geoserver`
 
-```bash
-docker compose up -d
-```
+2. **SSL Certificate Issues**:
+   - Check certificate status: `docker compose exec certbot certbot certificates`
+   - Force renewal: `docker compose exec certbot certbot renew --force-renewal`
 
-5. **Run database migrations**:
+3. **OAuth Login Failures**:
+   - Verify redirect URI in Google console matches `/login/callback/google`
+   - Check client_secret file is present and correctly mounted
 
-```bash
-docker compose exec cone-app flask db upgrade
-```
+## Security Considerations
 
-## Configuration Details
-
-### SSL/HTTPS Configuration
-
-The HTTPS configuration is handled by Nginx and Let's Encrypt certificates:
-
-- Certbot container generates and renews certificates
-- Nginx loads certificates from `/etc/letsencrypt/live/conescout.duckdns.org/`
-- All HTTP traffic is redirected to HTTPS
-- HTTPS port is 443
-
-### OAuth2 Configuration
-
-Google OAuth2 is configured with the following settings:
-
-- Client ID and secret are stored in `client_secret_509773047187-ug65ufnta7ikjrtjmct8aks6rgs0in4d.apps.googleusercontent.com.json`
-- Authorized redirect URI: `https://conescout.duckdns.org/login/callback/google`
-- Authentication flow is handled by Flask-Dance
-
-## Troubleshooting
-
-### SSL Certificate Issues
-
-If you encounter SSL certificate issues:
-
-1. Check if certificates exist:
-
-```bash
-docker compose exec nginx-container ls -la /etc/letsencrypt/live/conescout.duckdns.org/
-```
-
-2. Renew certificates if needed:
-
-```bash
-docker compose exec certbot certbot renew --force-renewal
-docker compose restart nginx-container
-```
-
-### OAuth Login Issues
-
-If OAuth login isn't working:
-
-1. Ensure the database schema is correct:
-
-```bash
-docker compose exec postgis psql -U geoserver -d geoserver_db -c "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
-```
-
-2. Check the OAuth callback URL configuration:
-
-```bash
-docker compose exec cone-app cat /usr/src/app/client_secret_509773047187-ug65ufnta7ikjrtjmct8aks6rgs0in4d.apps.googleusercontent.com.json
-```
-
-### Database Migration Issues
-
-If migrations fail:
-
-1. Run a manual database update:
-
-```bash
-docker compose exec postgis psql -U geoserver -d geoserver_db -c "
-ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(50);
-ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(256);
-ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS name VARCHAR(255);
-ALTER TABLE \"user\" ALTER COLUMN username DROP NOT NULL;
-ALTER TABLE \"user\" ALTER COLUMN password DROP NOT NULL;
-ALTER TABLE \"user\" ALTER COLUMN fs_uniquifier DROP NOT NULL;
-"
-```
-
-## Testing
-
-After setup, test the following:
-
-1. HTTP to HTTPS redirect: `http://conescout.duckdns.org` should redirect to HTTPS
-2. Standard login: `https://conescout.duckdns.org/auth/login`
-3. Google OAuth login: `https://conescout.duckdns.org/auth/google`
-4. Admin panel: `https://conescout.duckdns.org/admin` (using admin/conescout credentials)
-
-## Security Notes
-
-- HTTPS is enforced for all traffic
-- OAuth2 uses secure tokens with limited scope (profile and email only)
-- Admin routes are protected with role-based authentication
-- Database credentials are managed through environment variables
+- All sensitive information is stored in environment variables
+- Credentials are never stored in the git repository
+- HTTPS is enforced for all connections
+- OAuth access is limited to email and profile information only
